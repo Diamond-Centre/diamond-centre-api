@@ -22,8 +22,7 @@ Backend REST API for the Diamond Centre (DICE) platform built with Express.js, T
 ```bash
 npm install
 cp .env.example .env
-# Edit .env with your configuration
-docker compose up -d   # optional, if using Docker for PostgreSQL
+npm run db:start   # start local PostgreSQL
 npm run dev
 ```
 
@@ -36,6 +35,8 @@ API available at `http://localhost:3000`
 | `npm run dev` | Development server with hot reload |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Production server |
+| `npm run db:start` | Start local PostgreSQL for this project |
+| `npm run db:stop` | Stop local PostgreSQL |
 | `npm test` | Run tests |
 | `npm run lint` | Lint code |
 
@@ -45,9 +46,14 @@ API available at `http://localhost:3000`
 curl http://localhost:3000/health
 ```
 
-## API Documentation
+## API Documentation (Swagger)
 
-See `/docs/api-contract.md` for the full API contract.
+- UI: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+- OpenAPI JSON: [http://localhost:3000/api-docs.json](http://localhost:3000/api-docs.json)
+
+La specification suit le contrat dans `docs/api-contract.md`.
+
+## API Contract
 
 ## Project structure
 
