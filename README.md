@@ -60,14 +60,31 @@ La specification suit le contrat dans `docs/api-contract.md`.
 ```
 DICE-PROJECT-BACKEND/
 ??? src/
-?   ??? index.ts      # Express app entry point
-?   ??? db.ts         # PostgreSQL connection pool
+?   ??? config/           # Swagger, app config
+?   ??? controllers/      # HTTP layer (req/res)
+?   ??? services/         # Business logic
+?   ??? repositories/     # Database access
+?   ??? models/           # DTO mappers (DB -> API)
+?   ??? routes/           # Route definitions
+?   ??? middleware/       # Auth, error handling
+?   ??? types/            # TypeScript interfaces
+?   ??? errors/           # Custom error classes
+?   ??? utils/            # Helpers (JWT, QR, dates)
+?   ??? db/               # Connection, migrations, schema
 ??? docs/
 ?   ??? api-contract.md
 ??? .github/workflows/ci.yml
 ??? docker-compose.yml
 ??? package.json
 ??? tsconfig.json
+```
+
+### Architecture (layered)
+
+```
+Routes -> Controllers -> Services -> Repositories -> PostgreSQL
+                |            |
+           Middleware     Models (mappers)
 ```
 
 ## Branches
