@@ -3,8 +3,22 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+function getConnectionString(): string {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+
+  const host = process.env.DB_HOST || "localhost";
+  const port = process.env.DB_PORT || "5432";
+  const database = process.env.DB_NAME || "dice_db";
+  const user = process.env.DB_USER || "dice_user";
+  const password = process.env.DB_PASSWORD || "password";
+
+  return `postgres://${user}:${password}@${host}:${port}/${database}`;
+}
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: getConnectionString(),
 });
 
 export async function testConnection(): Promise<boolean> {

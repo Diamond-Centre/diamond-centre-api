@@ -1,59 +1,53 @@
-# DICE-PROJECT-BACKEND
+# Diamond Centre - API
 
-Backend API for the DICE application built with Express.js, TypeScript, and PostgreSQL.
+Backend REST API for the Diamond Centre (DICE) platform built with Express.js, TypeScript, and PostgreSQL.
 
 ## Stack
 
-- **Runtime:** Node.js + Express.js
-- **Language:** TypeScript
-- **Database:** PostgreSQL
-- **Dev tools:** nodemon, ts-node
-- **CI/CD:** GitHub Actions
-- **Containers:** Docker Compose
+- Node.js + Express.js
+- TypeScript
+- PostgreSQL
+- JWT Authentication
+- Mobile Money (MTN / Orange)
+- Docker Compose
+- GitHub Actions CI
 
-## Getting started
+## Prerequisites
 
-### 1. Install dependencies
+- Node.js >= 18
+- PostgreSQL >= 14 (or Docker)
+
+## Installation
 
 ```bash
 npm install
-```
-
-### 2. Environment variables
-
-```bash
 cp .env.example .env
-```
-
-### 3. Start PostgreSQL
-
-With Docker:
-
-```bash
-docker compose up -d
-```
-
-### 4. Run in development
-
-```bash
+# Edit .env with your configuration
+docker compose up -d   # optional, if using Docker for PostgreSQL
 npm run dev
 ```
 
 API available at `http://localhost:3000`
 
-### 5. Health check
+## Scripts
+
+| Script | Description |
+| ------ | ----------- |
+| `npm run dev` | Development server with hot reload |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm start` | Production server |
+| `npm test` | Run tests |
+| `npm run lint` | Lint code |
+
+## Health check
 
 ```bash
 curl http://localhost:3000/health
 ```
 
-## Scripts
+## API Documentation
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm start` | Run production build |
+See `/docs/api-contract.md` for the full API contract.
 
 ## Project structure
 
@@ -62,8 +56,21 @@ DICE-PROJECT-BACKEND/
 ??? src/
 ?   ??? index.ts      # Express app entry point
 ?   ??? db.ts         # PostgreSQL connection pool
+??? docs/
+?   ??? api-contract.md
 ??? .github/workflows/ci.yml
 ??? docker-compose.yml
 ??? package.json
 ??? tsconfig.json
 ```
+
+## Branches
+
+| Branch | Description |
+| ------ | ----------- |
+| main | Production |
+| test | Pre-production |
+
+## Contributing
+
+See CONTRIBUTING.md
