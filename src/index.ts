@@ -4,7 +4,10 @@ import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import { testConnection } from "./db";
+import { runMigrations } from "./db/migrate";
 import { setupSwagger } from "./config/swagger";
+import apiRoutes from "./routes";
+import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
 
@@ -37,14 +40,22 @@ app.get("/", (_req, res) => {
     version: "1.0.0",
     endpoints: {
       health: "/health",
+      api: "/api",
       docs: "/api-docs",
       openapi: "/api-docs.json",
     },
   });
 });
 
+app.use("/api", apiRoutes);
+app.use(errorHandler);
+
 async function start() {
   const dbConnected = await testConnection();
+
+  if (dbConnected) {
+    await runMigrations();
+  }
 
   app.listen(PORT, () => {
     console.log(`DICE backend running on http://localhost:${PORT}`);
