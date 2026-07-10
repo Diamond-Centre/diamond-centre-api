@@ -9,7 +9,7 @@ SOCKET_DIR="$ROOT_DIR/.postgres/sockets"
 
 mkdir -p "$SOCKET_DIR"
 
-if [ ! -d "$DATA_DIR/PG_VERSION" ]; then
+if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
   echo "Initializing PostgreSQL data directory..."
   "$PG_BIN/initdb" -D "$DATA_DIR" -U dice_user \
     --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8
