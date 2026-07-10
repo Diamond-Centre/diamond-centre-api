@@ -18,7 +18,7 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-  })
+  }),
 );
 app.use(cors());
 app.use(morgan("dev"));
@@ -62,7 +62,7 @@ async function start() {
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
     if (!dbConnected) {
       console.warn(
-        "PostgreSQL is not available. Start it with: npm run db:start"
+        "PostgreSQL is not available. Start it with: npm run db:start",
       );
     }
   });
