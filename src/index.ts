@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import os from "os";
 import { testConnection } from "./db";
 import { runMigrations } from "./db/migrate";
 import { setupSwagger } from "./config/swagger";
@@ -12,15 +13,37 @@ import { errorHandler } from "./middleware/errorHandler";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-app.use(cors());
+
+const corsOptions: cors.CorsOptions = {
+  origin: true,
+  credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+  ],
+  exposedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
+};
+
+app.use(cors(corsOptions));
+// Ensure every preflight gets CORS headers (avoids 405 without Allow-Origin)
+app.options("*", cors(corsOptions));
+
 app.use(morgan("dev"));
 app.use(express.json());
 
@@ -50,6 +73,23 @@ app.get("/", (_req, res) => {
 app.use("/api", apiRoutes);
 app.use(errorHandler);
 
+function getLanIPv4Addresses(): string[] {
+  const interfaces = os.networkInterfaces();
+  const addresses: string[] = [];
+
+  for (const entries of Object.values(interfaces)) {
+    if (!entries) continue;
+    for (const iface of entries) {
+      if (iface.internal) continue;
+      if (iface.family === "IPv4" || (iface.family as unknown) === 4) {
+        addresses.push(iface.address);
+      }
+    }
+  }
+
+  return addresses;
+}
+
 async function start() {
   const dbConnected = await testConnection();
 
@@ -57,9 +97,16 @@ async function start() {
     await runMigrations();
   }
 
-  app.listen(PORT, () => {
-    console.log(`DICE backend running on http://localhost:${PORT}`);
-    console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+  app.listen(PORT, HOST, () => {
+    const lanIps = getLanIPv4Addresses();
+
+    console.log(`DICE backend listening on ${HOST}:${PORT}`);
+    console.log(`Local:   http://localhost:${PORT}`);
+    lanIps.forEach((ip) => {
+      console.log(`Network: http://${ip}:${PORT}`);
+      console.log(`API:     http://${ip}:${PORT}/api`);
+      console.log(`Swagger: http://${ip}:${PORT}/api-docs`);
+    });
     if (!dbConnected) {
       console.warn(
         "PostgreSQL is not available. Start it with: npm run db:start",

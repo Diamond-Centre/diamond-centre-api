@@ -5,7 +5,7 @@ import { EventRecord } from "../types";
 export class EventRepository {
   async findPublished(): Promise<EventRecord[]> {
     const result = await pool.query<EventRecord>(
-      `SELECT * FROM events WHERE status = 'published' ORDER BY date ASC, time ASC`
+      `SELECT * FROM events WHERE status = 'published' ORDER BY start_date ASC`
     );
     return result.rows;
   }
@@ -29,21 +29,27 @@ export class EventRepository {
     return result.rows[0] ?? null;
   }
 
-  async create(data: {
-    title: string;
-    description?: string;
-    price: number;
-    currency: string;
-    date: string;
-    time: string;
-    location: string;
-    category: string;
-    capacity: number;
-    image_url?: string;
-    status: string;
-  }): Promise<EventRecord> {
-    const result = await pool.query<EventRecord>(
-      `INSERT INTO events (title, description, price, currency, date, time, location, category, capacity, available_tickets, image_url, status)
+  async create(
+    client: PoolClient,
+    data: {
+      title: string;
+      description?: string;
+      price: number;
+      currency: string;
+      start_date: string;
+      end_date: string;
+      location: string;
+      category: string;
+      capacity: number;
+      image_url?: string;
+      status: string;
+    }
+  ): Promise<EventRecord> {
+    const result = await client.query<EventRecord>(
+      `INSERT INTO events (
+         title, description, price, currency, start_date, end_date,
+         location, category, capacity, available_tickets, image_url, status
+       )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10, $11)
        RETURNING *`,
       [
@@ -51,8 +57,8 @@ export class EventRepository {
         data.description ?? null,
         data.price,
         data.currency,
-        data.date,
-        data.time,
+        data.start_date,
+        data.end_date,
         data.location,
         data.category,
         data.capacity,

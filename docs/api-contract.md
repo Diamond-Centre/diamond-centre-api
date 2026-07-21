@@ -19,14 +19,25 @@
     "description": "Une conférence sur l'intelligence artificielle",
     "price": 5000,
     "currency": "XAF",
-    "date": "2026-10-10",
-    "time": "14:00",
+    "start_date": "2026-10-10",
+    "end_date": "2026-10-12",
     "location": "Yaoundé",
     "category": "conference",
     "capacity": 200,
     "available_tickets": 150,
     "image_url": "https://example.com/event.jpg",
     "status": "published",
+    "promotion": {
+      "id": 1,
+      "event_id": 1,
+      "nombre": 50,
+      "sexe": "tous",
+      "pourcentage": 20,
+      "prix_promo": 4000,
+      "duree": 7,
+      "description": "Promo early bird",
+      "created_at": "2026-01-01T00:00:00Z"
+    },
     "created_at": "2026-01-01T00:00:00Z",
     "updated_at": "2026-01-01T00:00:00Z"
   }
@@ -43,14 +54,25 @@
   "description": "Une conférence sur l'intelligence artificielle",
   "price": 5000,
   "currency": "XAF",
-  "date": "2026-10-10",
-  "time": "14:00",
+  "start_date": "2026-10-10",
+  "end_date": "2026-10-12",
   "location": "Yaoundé",
   "category": "conference",
   "capacity": 200,
   "available_tickets": 150,
   "image_url": "https://example.com/event.jpg",
   "status": "published",
+  "promotion": {
+    "id": 1,
+    "event_id": 1,
+    "nombre": 50,
+    "sexe": "tous",
+    "pourcentage": 20,
+    "prix_promo": 4000,
+    "duree": 7,
+    "description": "Promo early bird",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
   "created_at": "2026-01-01T00:00:00Z",
   "updated_at": "2026-01-01T00:00:00Z"
 }
@@ -65,12 +87,20 @@
   "description": "Une conférence sur l'intelligence artificielle",
   "price": 5000,
   "currency": "XAF",
-  "date": "2026-10-10",
-  "time": "14:00",
+  "start_date": "2026-10-10",
+  "end_date": "2026-10-12",
   "location": "Yaoundé",
   "category": "conference",
   "capacity": 200,
-  "image_url": "https://example.com/event.jpg"
+  "image_url": "https://example.com/event.jpg",
+  "status": "published",
+  "promotion": {
+    "nombre": 50,
+    "sexe": "tous",
+    "pourcentage": 20,
+    "duree": 7,
+    "description": "Promo early bird"
+  }
 }
 ```
 
@@ -80,9 +110,21 @@
   "id": 1,
   "title": "Conférence IA",
   "price": 5000,
-  "date": "2026-10-10",
-  "status": "draft",
-  "created_at": "2026-01-01T00:00:00Z"
+  "start_date": "2026-10-10",
+  "end_date": "2026-10-12",
+  "status": "published",
+  "created_at": "2026-01-01T00:00:00Z",
+  "promotion": {
+    "id": 1,
+    "event_id": 1,
+    "nombre": 50,
+    "sexe": "tous",
+    "pourcentage": 20,
+    "prix_promo": 4000,
+    "duree": 7,
+    "description": "Promo early bird",
+    "created_at": "2026-01-01T00:00:00Z"
+  }
 }
 ```
 

@@ -8,6 +8,8 @@ export type EventCategory =
   | "atelier"
   | "webinaire";
 
+export type PromotionSexe = "homme" | "femme" | "tous";
+
 export type TicketStatus = "pending" | "confirmed" | "cancelled" | "refunded";
 
 export type PaymentMethod = "mtn_momo" | "orange_money";
@@ -28,8 +30,8 @@ export interface EventRecord {
   description: string | null;
   price: string | number;
   currency: string;
-  date: Date | string;
-  time: string;
+  start_date: Date | string;
+  end_date: Date | string;
   location: string;
   category: string;
   capacity: number;
@@ -38,6 +40,17 @@ export interface EventRecord {
   status: EventStatus;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface PromotionRecord {
+  id: number;
+  event_id: number;
+  nombre: number;
+  sexe: PromotionSexe;
+  pourcentage: string | number;
+  duree: number;
+  description: string | null;
+  created_at: Date;
 }
 
 export interface TicketRecord {
@@ -92,18 +105,27 @@ export interface LoginInput {
   password: string;
 }
 
+export interface CreatePromotionInput {
+  nombre: number;
+  sexe: PromotionSexe;
+  pourcentage: number;
+  duree: number;
+  description?: string;
+}
+
 export interface CreateEventInput {
   title: string;
   description?: string;
   price: number;
   currency?: string;
-  date: string;
-  time: string;
+  start_date: string;
+  end_date: string;
   location: string;
   category: string;
   capacity: number;
   image_url?: string;
   status?: EventStatus;
+  promotion?: CreatePromotionInput;
 }
 
 export interface ReserveTicketInput {

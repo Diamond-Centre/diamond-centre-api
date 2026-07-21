@@ -3,6 +3,8 @@ import {
   EventRecord,
   EventStatus,
   PaymentRecord,
+  PromotionRecord,
+  PromotionSexe,
   TicketRecord,
   UserRecord,
   UserRole,
@@ -18,21 +20,52 @@ export function toUserResponse(user: UserRecord) {
   };
 }
 
-export function toEventResponse(event: EventRecord) {
+export function calculatePromoPrice(
+  eventPrice: number,
+  pourcentage: number
+): number {
+  const discounted = eventPrice * (1 - pourcentage / 100);
+  return Math.round(discounted * 100) / 100;
+}
+
+export function toPromotionResponse(
+  promotion: PromotionRecord,
+  eventPrice: number
+) {
+  const pourcentage = Number(promotion.pourcentage);
+  return {
+    id: promotion.id,
+    event_id: promotion.event_id,
+    nombre: promotion.nombre,
+    sexe: promotion.sexe,
+    pourcentage,
+    prix_promo: calculatePromoPrice(eventPrice, pourcentage),
+    duree: promotion.duree,
+    description: promotion.description,
+    created_at: promotion.created_at.toISOString(),
+  };
+}
+
+export function toEventResponse(
+  event: EventRecord,
+  promotion: PromotionRecord | null = null
+) {
+  const price = Number(event.price);
   return {
     id: event.id,
     title: event.title,
     description: event.description,
-    price: Number(event.price),
+    price,
     currency: event.currency,
-    date: formatDate(event.date),
-    time: event.time,
+    start_date: formatDate(event.start_date),
+    end_date: formatDate(event.end_date),
     location: event.location,
     category: event.category,
     capacity: event.capacity,
     available_tickets: event.available_tickets,
     image_url: event.image_url,
     status: event.status,
+    promotion: promotion ? toPromotionResponse(promotion, price) : null,
     created_at: event.created_at.toISOString(),
     updated_at: event.updated_at.toISOString(),
   };
@@ -43,7 +76,8 @@ export function toCreatedEventResponse(event: EventRecord) {
     id: event.id,
     title: event.title,
     price: Number(event.price),
-    date: formatDate(event.date),
+    start_date: formatDate(event.start_date),
+    end_date: formatDate(event.end_date),
     status: event.status,
     created_at: event.created_at.toISOString(),
   };
@@ -118,4 +152,8 @@ export function isValidUserRole(role: string): role is UserRole {
 
 export function isValidEventStatus(status: string): status is EventStatus {
   return ["draft", "published", "cancelled", "completed"].includes(status);
+}
+
+export function isValidPromotionSexe(sexe: string): sexe is PromotionSexe {
+  return sexe === "homme" || sexe === "femme" || sexe === "tous";
 }
