@@ -128,6 +128,41 @@
 }
 ```
 
+### PUT /api/events/:id
+
+**Auth:** Bearer admin
+
+**Request:** (all fields optional; `promotion: null` removes the promotion)
+```json
+{
+  "title": "Conférence IA - Updated",
+  "price": 6000,
+  "start_date": "2026-10-10",
+  "end_date": "2026-10-13",
+  "status": "published",
+  "promotion": {
+    "nombre": 30,
+    "sexe": "tous",
+    "pourcentage": 15,
+    "duree": 5,
+    "description": "Promo mise a jour"
+  }
+}
+```
+
+**Response (200):** full event object (same shape as GET /api/events/:id)
+
+### DELETE /api/events/:id
+
+**Auth:** Bearer admin
+
+**Response (200):**
+```json
+{
+  "message": "Event deleted"
+}
+```
+
 ---
 
 ## Tickets
@@ -291,7 +326,10 @@
   "email": "admin@diamondcentre.com",
   "password": "securepassword",
   "name": "Admin",
-  "role": "admin"
+  "role": "admin",
+  "telephone": "+237670000000",
+  "sexe": "homme",
+  "picture": "https://example.com/avatar.jpg"
 }
 ```
 
@@ -302,6 +340,9 @@
   "email": "admin@diamondcentre.com",
   "name": "Admin",
   "role": "admin",
+  "telephone": "+237670000000",
+  "sexe": "homme",
+  "picture": "https://example.com/avatar.jpg",
   "created_at": "2026-01-01T00:00:00Z"
 }
 ```
@@ -326,7 +367,11 @@
     "id": 1,
     "email": "admin@diamondcentre.com",
     "name": "Admin",
-    "role": "admin"
+    "role": "admin",
+    "telephone": "+237670000000",
+    "sexe": "homme",
+    "picture": "https://example.com/avatar.jpg",
+    "created_at": "2026-01-01T00:00:00Z"
   }
 }
 ```

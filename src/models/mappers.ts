@@ -8,6 +8,7 @@ import {
   TicketRecord,
   UserRecord,
   UserRole,
+  UserSexe,
 } from "../types";
 
 export function toUserResponse(user: UserRecord) {
@@ -16,6 +17,9 @@ export function toUserResponse(user: UserRecord) {
     email: user.email,
     name: user.name,
     role: user.role,
+    telephone: user.telephone,
+    sexe: user.sexe,
+    picture: user.picture,
     created_at: user.created_at.toISOString(),
   };
 }
@@ -148,6 +152,10 @@ export function toPaymentStatusResponse(payment: PaymentRecord) {
 
 export function isValidUserRole(role: string): role is UserRole {
   return role === "admin" || role === "client";
+}
+
+export function isValidUserSexe(sexe: string): sexe is UserSexe {
+  return sexe === "homme" || sexe === "femme";
 }
 
 export function isValidEventStatus(status: string): status is EventStatus {

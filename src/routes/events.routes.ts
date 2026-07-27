@@ -8,5 +8,12 @@ const router = Router();
 router.get("/", asyncHandler(eventController.list));
 router.get("/:id", asyncHandler(eventController.getById));
 router.post("/", authenticate, requireAdmin, asyncHandler(eventController.create));
+router.put("/:id", authenticate, requireAdmin, asyncHandler(eventController.update));
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  asyncHandler(eventController.remove)
+);
 
 export default router;

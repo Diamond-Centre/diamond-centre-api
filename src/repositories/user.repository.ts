@@ -3,18 +3,29 @@ import { UserRecord } from "../types";
 import { ConflictError } from "../errors/AppError";
 
 export class UserRepository {
-  async create(
-    email: string,
-    passwordHash: string,
-    name: string,
-    role: string
-  ): Promise<UserRecord> {
+  async create(data: {
+    email: string;
+    passwordHash: string;
+    name: string;
+    role: string;
+    telephone: string;
+    sexe: string;
+    picture: string;
+  }): Promise<UserRecord> {
     try {
       const result = await pool.query<UserRecord>(
-        `INSERT INTO users (email, password_hash, name, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, email, password_hash, name, role, created_at`,
-        [email, passwordHash, name, role]
+        `INSERT INTO users (email, password_hash, name, role, telephone, sexe, picture)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, email, password_hash, name, role, telephone, sexe, picture, created_at`,
+        [
+          data.email,
+          data.passwordHash,
+          data.name,
+          data.role,
+          data.telephone,
+          data.sexe,
+          data.picture,
+        ]
       );
       return result.rows[0];
     } catch (error: unknown) {
@@ -27,7 +38,8 @@ export class UserRepository {
 
   async findByEmail(email: string): Promise<UserRecord | null> {
     const result = await pool.query<UserRecord>(
-      "SELECT id, email, password_hash, name, role, created_at FROM users WHERE email = $1",
+      `SELECT id, email, password_hash, name, role, telephone, sexe, picture, created_at
+       FROM users WHERE email = $1`,
       [email]
     );
     return result.rows[0] ?? null;

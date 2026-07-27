@@ -58,6 +58,9 @@ const swaggerDocument = {
           email: { type: "string", format: "email" },
           name: { type: "string" },
           role: { type: "string", enum: ["admin", "client"] },
+          telephone: { type: "string", example: "+237670000000" },
+          sexe: { type: "string", enum: ["homme", "femme"] },
+          picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
           created_at: { type: "string", format: "date-time" },
         },
       },
@@ -153,6 +156,32 @@ const swaggerDocument = {
             enum: ["draft", "published", "cancelled", "completed"],
           },
           promotion: { $ref: "#/components/schemas/CreatePromotionRequest" },
+        },
+      },
+      UpdateEventRequest: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string", nullable: true },
+          price: { type: "number" },
+          currency: { type: "string", example: "XAF" },
+          start_date: { type: "string", format: "date" },
+          end_date: { type: "string", format: "date" },
+          location: { type: "string" },
+          category: { type: "string" },
+          capacity: { type: "integer" },
+          image_url: { type: "string", format: "uri", nullable: true },
+          status: {
+            type: "string",
+            enum: ["draft", "published", "cancelled", "completed"],
+          },
+          promotion: {
+            oneOf: [
+              { $ref: "#/components/schemas/CreatePromotionRequest" },
+              { type: "null" },
+            ],
+            description: "Object to upsert, null to remove, omit to keep",
+          },
         },
       },
       TicketReserveRequest: {
@@ -255,12 +284,15 @@ const swaggerDocument = {
       },
       RegisterRequest: {
         type: "object",
-        required: ["email", "password", "name", "role"],
+        required: ["email", "password", "name", "role", "telephone", "sexe", "picture"],
         properties: {
           email: { type: "string", format: "email" },
           password: { type: "string", format: "password" },
           name: { type: "string" },
           role: { type: "string", enum: ["admin", "client"] },
+          telephone: { type: "string", example: "+237670000000" },
+          sexe: { type: "string", enum: ["homme", "femme"] },
+          picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
         },
       },
       LoginRequest: {
@@ -423,6 +455,81 @@ const swaggerDocument = {
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Event" },
+              },
+            },
+          },
+          "404": {
+            description: "Evenement introuvable",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+      put: {
+        tags: ["Events"],
+        summary: "Mettre a jour un evenement",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateEventRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Evenement mis a jour",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Event" },
+              },
+            },
+          },
+          "404": {
+            description: "Evenement introuvable",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ["Events"],
+        summary: "Supprimer un evenement",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Evenement supprime",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "Event deleted" },
+                  },
+                },
               },
             },
           },

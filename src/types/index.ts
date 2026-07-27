@@ -1,4 +1,5 @@
 export type UserRole = "admin" | "client";
+export type UserSexe = "homme" | "femme";
 
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventCategory =
@@ -21,6 +22,9 @@ export interface UserRecord {
   password_hash: string;
   name: string;
   role: UserRole;
+  telephone: string;
+  sexe: UserSexe;
+  picture: string;
   created_at: Date;
 }
 
@@ -98,6 +102,9 @@ export interface RegisterInput {
   password: string;
   name: string;
   role: UserRole;
+  telephone: string;
+  sexe: UserSexe;
+  picture: string;
 }
 
 export interface LoginInput {
@@ -126,6 +133,21 @@ export interface CreateEventInput {
   image_url?: string;
   status?: EventStatus;
   promotion?: CreatePromotionInput;
+}
+
+export interface UpdateEventInput {
+  title?: string;
+  description?: string | null;
+  price?: number;
+  currency?: string;
+  start_date?: string;
+  end_date?: string;
+  location?: string;
+  category?: string;
+  capacity?: number;
+  image_url?: string | null;
+  status?: EventStatus;
+  promotion?: CreatePromotionInput | null;
 }
 
 export interface ReserveTicketInput {

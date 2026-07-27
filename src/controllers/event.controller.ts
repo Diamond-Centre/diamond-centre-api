@@ -18,6 +18,19 @@ export class EventController {
     const event = await eventService.create(req.body);
     res.status(201).json(event);
   };
+
+  update = async (req: AuthRequest, res: Response): Promise<void> => {
+    const event = await eventService.update(
+      parseIdParam(req.params.id),
+      req.body
+    );
+    res.json(event);
+  };
+
+  remove = async (req: AuthRequest, res: Response): Promise<void> => {
+    const result = await eventService.remove(parseIdParam(req.params.id));
+    res.json(result);
+  };
 }
 
 export const eventController = new EventController();

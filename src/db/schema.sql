@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'client')),
+  telephone VARCHAR(50) NOT NULL,
+  sexe VARCHAR(20) NOT NULL CHECK (sexe IN ('homme', 'femme')),
+  picture TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -124,6 +127,33 @@ BEGIN
     ALTER TABLE promotions
       ADD CONSTRAINT promotions_pourcentage_check
       CHECK (pourcentage > 0 AND pourcentage <= 100);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'telephone'
+  ) THEN
+    ALTER TABLE users ADD COLUMN telephone VARCHAR(50);
+    ALTER TABLE users ADD COLUMN sexe VARCHAR(20);
+    ALTER TABLE users ADD COLUMN picture TEXT;
+    UPDATE users
+    SET telephone = COALESCE(telephone, ''),
+        sexe = COALESCE(sexe, 'homme'),
+        picture = COALESCE(picture, '')
+    WHERE telephone IS NULL OR sexe IS NULL OR picture IS NULL;
+    ALTER TABLE users ALTER COLUMN telephone SET NOT NULL;
+    ALTER TABLE users ALTER COLUMN sexe SET NOT NULL;
+    ALTER TABLE users ALTER COLUMN picture SET NOT NULL;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_sexe_check'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'sexe'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_sexe_check CHECK (sexe IN ('homme', 'femme'));
   END IF;
 END $$;
 

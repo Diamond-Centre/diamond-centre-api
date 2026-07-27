@@ -12,4 +12,16 @@ router.post(
   asyncHandler(validationController.scan)
 );
 
+router.post(
+  "/mobile-checkin",
+  authenticate,
+  asyncHandler(validationController.mobileCheckin)
+);
+
+router.get(
+  "/mobile-status/:ticketId",
+  authenticate,
+  asyncHandler(validationController.mobileStatus)
+);
+
 export default router;
