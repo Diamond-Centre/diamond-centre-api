@@ -10,17 +10,22 @@ import {
   isValidUserRole,
   isValidUserSexe,
 } from "../models/mappers";
-import {
-  BadRequestError,
-  UnauthorizedError,
-} from "../errors/AppError";
+import { BadRequestError, UnauthorizedError } from "../errors/AppError";
 import { LoginInput, RegisterInput } from "../types";
 
 export class AuthService {
   async register(input: RegisterInput) {
     const { email, password, name, role, telephone, sexe, picture } = input;
 
-    if (!email || !password || !name || !role || !telephone || !sexe || !picture) {
+    if (
+      !email ||
+      !password ||
+      !name ||
+      !role ||
+      !telephone ||
+      !sexe ||
+      !picture
+    ) {
       throw new BadRequestError("Missing required fields");
     }
 

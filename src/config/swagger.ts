@@ -26,6 +26,7 @@ const swaggerDocument = {
     { name: "Tickets", description: "Reservation de tickets" },
     { name: "Payments", description: "Paiements Mobile Money" },
     { name: "Validation", description: "Validation QR code" },
+    { name: "Certificates", description: "Certificats de formation Diamond Centre" },
   ],
   components: {
     securitySchemes: {
@@ -206,23 +207,23 @@ const swaggerDocument = {
           currency: { type: "string", example: "XAF" },
           status: {
             type: "string",
-            enum: ["pending", "confirmed", "cancelled", "refunded"],
+            enum: ["confirme", "scanne", "expire", "rembourse"],
           },
           customer_name: { type: "string" },
           customer_email: { type: "string", format: "email" },
           qr_codes: {
             type: "array",
             items: {
-              oneOf: [
-                { type: "string" },
-                {
-                  type: "object",
-                  properties: {
-                    code: { type: "string" },
-                    validated: { type: "boolean" },
-                  },
+              type: "object",
+              properties: {
+                code: { type: "string", description: "QR payload" },
+                entry_code: {
+                  type: "string",
+                  example: "48291573",
+                  description: "8-digit code shown under the QR for admin manual validation",
                 },
-              ],
+                validated: { type: "boolean" },
+              },
             },
           },
           expires_at: { type: "string", format: "date-time" },
@@ -271,6 +272,17 @@ const swaggerDocument = {
           qr_code: { type: "string", example: "dc_100_abc123" },
         },
       },
+      ValidationEntryCodeRequest: {
+        type: "object",
+        required: ["entry_code"],
+        properties: {
+          entry_code: {
+            type: "string",
+            example: "48291573",
+            description: "8-digit code printed under the QR",
+          },
+        },
+      },
       ValidationScanResponse: {
         type: "object",
         properties: {
@@ -278,6 +290,8 @@ const swaggerDocument = {
           ticket_id: { type: "integer" },
           event_title: { type: "string" },
           customer_name: { type: "string" },
+          entry_code: { type: "string" },
+          qr_code: { type: "string" },
           validated_at: { type: "string", format: "date-time" },
           error: { type: "string" },
         },
@@ -680,6 +694,112 @@ const swaggerDocument = {
             },
           },
         },
+      },
+    },
+    "/api/validation/entry-code": {
+      post: {
+        tags: ["Validation"],
+        summary: "Valider un ticket via le code a 8 chiffres sous le QR",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ValidationEntryCodeRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Resultat de validation",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ValidationScanResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/certificates/eligible": {
+      get: {
+        tags: ["Certificates"],
+        summary: "Lister les participants eligibles a un certificat",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "event_id",
+            in: "query",
+            required: true,
+            schema: { type: "integer" },
+          },
+        ],
+        responses: { "200": { description: "Eligible + deja delivres" } },
+      },
+    },
+    "/api/certificates/issue": {
+      post: {
+        tags: ["Certificates"],
+        summary: "Delivrer des certificats (formation)",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["event_id"],
+                properties: {
+                  event_id: { type: "integer" },
+                  ticket_ids: {
+                    type: "array",
+                    items: { type: "integer" },
+                    description: "Optionnel — tous les tickets confirmes si omis",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: { "201": { description: "Certificats delivres" } },
+      },
+    },
+    "/api/certificates/me": {
+      get: {
+        tags: ["Certificates"],
+        summary: "Mes certificats",
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: "Liste des certificats" } },
+      },
+    },
+    "/api/certificates/{code}/html": {
+      get: {
+        tags: ["Certificates"],
+        summary: "Template HTML certificat Diamond Centre",
+        parameters: [
+          {
+            name: "code",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "HTML printable" } },
+      },
+    },
+    "/api/certificates/{code}": {
+      get: {
+        tags: ["Certificates"],
+        summary: "Verifier un certificat",
+        parameters: [
+          {
+            name: "code",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": { description: "Detail certificat" } },
       },
     },
   },

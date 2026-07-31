@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import os from "os";
 import { testConnection } from "./db";
 import { runMigrations } from "./db/migrate";
+import { ensureDefaultAdmin } from "./db/ensureDefaultAdmin";
 import { setupSwagger } from "./config/swagger";
 import apiRoutes from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -45,7 +46,11 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
 app.use(morgan("dev"));
-app.use(express.json());
+app.use(express.json({ limit: "8mb" }));
+
+const uploadPath = process.env.UPLOAD_PATH || "uploads";
+app.use("/uploads", express.static(uploadPath));
+app.use("/brand", express.static("public/brand"));
 
 setupSwagger(app);
 
@@ -95,6 +100,7 @@ async function start() {
 
   if (dbConnected) {
     await runMigrations();
+    await ensureDefaultAdmin();
   }
 
   app.listen(PORT, HOST, () => {

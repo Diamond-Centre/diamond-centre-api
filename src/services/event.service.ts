@@ -15,7 +15,8 @@ import {
   PromotionRecord,
   UpdateEventInput,
 } from "../types";
-import { formatDate } from "../utils/date";
+import { formatDate, formatTime, isValidTime } from "../utils/date";
+import { eventChangeService } from "./event_change.service";
 
 function validatePromotion(promotion: CreatePromotionInput): void {
   const { nombre, sexe, pourcentage, duree } = promotion;
@@ -30,6 +31,25 @@ function validatePromotion(promotion: CreatePromotionInput): void {
   }
 }
 
+function normalizeTimes(input: {
+  start_time?: string;
+  end_time?: string;
+}): { start_time: string; end_time: string } {
+  const start_time = input.start_time ?? "09:00";
+  const end_time = input.end_time ?? "18:00";
+  if (!isValidTime(start_time) || !isValidTime(end_time)) {
+    throw new BadRequestError("Invalid time format (use HH:MM)");
+  }
+  return { start_time, end_time };
+}
+
+function normalizeCoord(value: number | string | null | undefined): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
 export class EventService {
   async listPublished() {
     const events = await eventRepository.findPublished();
@@ -39,7 +59,19 @@ export class EventService {
     const promotionByEventId = new Map(
       promotions.map((promotion) => [promotion.event_id, promotion])
     );
+    return events.map((event) =>
+      toEventResponse(event, promotionByEventId.get(event.id) ?? null)
+    );
+  }
 
+  async listAll() {
+    const events = await eventRepository.findAll();
+    const promotions = await promotionRepository.findByEventIds(
+      events.map((event) => event.id)
+    );
+    const promotionByEventId = new Map(
+      promotions.map((promotion) => [promotion.event_id, promotion])
+    );
     return events.map((event) =>
       toEventResponse(event, promotionByEventId.get(event.id) ?? null)
     );
@@ -71,6 +103,9 @@ export class EventService {
       promotion,
     } = input;
 
+    const latitude = normalizeCoord(input.latitude);
+    const longitude = normalizeCoord(input.longitude);
+
     if (
       !title ||
       price == null ||
@@ -91,6 +126,7 @@ export class EventService {
       validatePromotion(promotion);
     }
 
+    const { start_time, end_time } = normalizeTimes(input);
     const status = isValidEventStatus(requestedStatus) ? requestedStatus : "draft";
 
     return withTransaction(async (client) => {
@@ -101,7 +137,11 @@ export class EventService {
         currency,
         start_date,
         end_date,
+        start_time,
+        end_time,
         location,
+        latitude,
+        longitude,
         category,
         capacity,
         image_url,
@@ -129,7 +169,11 @@ export class EventService {
     });
   }
 
-  async update(id: number | string, input: UpdateEventInput) {
+  async update(
+    id: number | string,
+    input: UpdateEventInput,
+    adminUserId?: number | null
+  ) {
     return withTransaction(async (client) => {
       const existing = await eventRepository.findByIdForUpdate(client, id);
       if (!existing) {
@@ -138,9 +182,16 @@ export class EventService {
 
       const start_date = input.start_date ?? formatDate(existing.start_date);
       const end_date = input.end_date ?? formatDate(existing.end_date);
+      const start_time =
+        input.start_time ?? formatTime(existing.start_time ?? "09:00");
+      const end_time = input.end_time ?? formatTime(existing.end_time ?? "18:00");
 
       if (new Date(end_date) < new Date(start_date)) {
         throw new BadRequestError("end_date must be on or after start_date");
+      }
+
+      if (!isValidTime(start_time) || !isValidTime(end_time)) {
+        throw new BadRequestError("Invalid time format (use HH:MM)");
       }
 
       if (input.status != null && !isValidEventStatus(input.status)) {
@@ -174,7 +225,17 @@ export class EventService {
         currency: input.currency ?? existing.currency,
         start_date,
         end_date,
+        start_time,
+        end_time,
         location: input.location ?? existing.location,
+        latitude:
+          input.latitude !== undefined
+            ? normalizeCoord(input.latitude)
+            : normalizeCoord(existing.latitude),
+        longitude:
+          input.longitude !== undefined
+            ? normalizeCoord(input.longitude)
+            : normalizeCoord(existing.longitude),
         category: input.category ?? existing.category,
         capacity,
         available_tickets,
@@ -182,6 +243,13 @@ export class EventService {
           input.image_url !== undefined ? input.image_url : existing.image_url,
         status: input.status ?? existing.status,
       });
+
+      const changeId = await eventChangeService.notifyScheduleChange(
+        client,
+        existing,
+        updated,
+        adminUserId ?? null
+      );
 
       let promotion: PromotionRecord | null = null;
       if (input.promotion === null) {
@@ -200,7 +268,11 @@ export class EventService {
         promotion = await promotionRepository.findByEventId(existing.id);
       }
 
-      return toEventResponse(updated, promotion);
+      return {
+        ...toEventResponse(updated, promotion),
+        schedule_change_id: changeId,
+        clients_notified: changeId != null,
+      };
     });
   }
 

@@ -9,6 +9,11 @@ export class EventController {
     res.json(events);
   };
 
+  listAll = async (_req: AuthRequest, res: Response): Promise<void> => {
+    const events = await eventService.listAll();
+    res.json(events);
+  };
+
   getById = async (req: AuthRequest, res: Response): Promise<void> => {
     const event = await eventService.getById(parseIdParam(req.params.id));
     res.json(event);
@@ -22,7 +27,8 @@ export class EventController {
   update = async (req: AuthRequest, res: Response): Promise<void> => {
     const event = await eventService.update(
       parseIdParam(req.params.id),
-      req.body
+      req.body,
+      req.user?.id ?? null
     );
     res.json(event);
   };

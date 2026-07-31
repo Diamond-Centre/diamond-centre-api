@@ -58,6 +58,46 @@ export class PaymentRepository {
       [status, transactionId ?? null, paidAt, paymentId]
     );
   }
+
+  async refundByTicketId(
+    client: PoolClient,
+    ticketId: number
+  ): Promise<void> {
+    await client.query(
+      `UPDATE payments SET status = 'refunded' WHERE ticket_id = $1 AND status = 'successful'`,
+      [ticketId]
+    );
+  }
+
+  async hasSuccessfulForTicket(
+    ticketId: number,
+    client?: PoolClient
+  ): Promise<boolean> {
+    const db = client ?? pool;
+    const result = await db.query(
+      `SELECT 1 FROM payments
+        WHERE ticket_id = $1 AND status = 'successful'
+        LIMIT 1`,
+      [ticketId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async hasSuccessfulForBooking(
+    bookingId: string,
+    client?: PoolClient
+  ): Promise<boolean> {
+    const db = client ?? pool;
+    const result = await db.query(
+      `SELECT 1
+         FROM payments p
+         JOIN tickets t ON t.id = p.ticket_id
+        WHERE t.booking_id = $1 AND p.status = 'successful'
+        LIMIT 1`,
+      [bookingId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
 }
 
 export const paymentRepository = new PaymentRepository();

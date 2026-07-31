@@ -1,4 +1,4 @@
-import { formatDate } from "../utils/date";
+import { formatDate, formatTime } from "../utils/date";
 import {
   EventRecord,
   EventStatus,
@@ -63,7 +63,17 @@ export function toEventResponse(
     currency: event.currency,
     start_date: formatDate(event.start_date),
     end_date: formatDate(event.end_date),
+    start_time: formatTime(event.start_time),
+    end_time: formatTime(event.end_time),
     location: event.location,
+    latitude:
+      event.latitude == null || Number.isNaN(Number(event.latitude))
+        ? null
+        : Number(event.latitude),
+    longitude:
+      event.longitude == null || Number.isNaN(Number(event.longitude))
+        ? null
+        : Number(event.longitude),
     category: event.category,
     capacity: event.capacity,
     available_tickets: event.available_tickets,
@@ -82,35 +92,59 @@ export function toCreatedEventResponse(event: EventRecord) {
     price: Number(event.price),
     start_date: formatDate(event.start_date),
     end_date: formatDate(event.end_date),
+    start_time: formatTime(event.start_time),
+    end_time: formatTime(event.end_time),
     status: event.status,
     created_at: event.created_at.toISOString(),
   };
 }
 
 export function toTicketReserveResponse(
-  ticket: TicketRecord,
+  tickets: TicketRecord[],
   eventTitle: string,
-  qrCodes: string[]
+  qrByTicketId: Map<number, Array<{ code: string; entry_code: string }>>
 ) {
+  const primary = tickets[0];
+  const quantity = tickets.length;
+  const totalPrice = tickets.reduce((sum, t) => sum + Number(t.total_price), 0);
+  const allQrCodes = tickets.flatMap((t) => qrByTicketId.get(t.id) ?? []);
+
   return {
-    id: ticket.id,
-    event_id: ticket.event_id,
+    id: primary.id,
+    booking_id: primary.booking_id ?? null,
+    event_id: primary.event_id,
     event_title: eventTitle,
-    quantity: ticket.quantity,
-    total_price: Number(ticket.total_price),
-    currency: ticket.currency,
-    status: ticket.status,
-    qr_codes: qrCodes,
-    expires_at: ticket.expires_at?.toISOString() ?? null,
+    quantity,
+    total_price: totalPrice,
+    currency: primary.currency,
+    status: primary.status,
+    ticket_ids: tickets.map((t) => t.id),
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      quantity: t.quantity,
+      total_price: Number(t.total_price),
+      currency: t.currency,
+      status: t.status,
+      qr_codes: qrByTicketId.get(t.id) ?? [],
+    })),
+    qr_codes: allQrCodes,
+    expires_at: primary.expires_at?.toISOString() ?? null,
   };
 }
 
 export function toTicketDetailResponse(
-  ticket: TicketRecord,
-  qrCodes: Array<{ code: string; validated: boolean }>
+  ticket: TicketRecord & {
+    event_start_date?: Date | string;
+    event_end_date?: Date | string;
+    event_start_time?: string | Date;
+    event_end_time?: string | Date;
+    event_location?: string;
+  },
+  qrCodes: Array<{ code: string; entry_code: string; validated: boolean }>
 ) {
   return {
     id: ticket.id,
+    booking_id: ticket.booking_id ?? null,
     event_id: ticket.event_id,
     event_title: ticket.event_title,
     quantity: ticket.quantity,
@@ -119,8 +153,23 @@ export function toTicketDetailResponse(
     status: ticket.status,
     customer_name: ticket.customer_name,
     customer_email: ticket.customer_email,
+    customer_phone: ticket.customer_phone,
     qr_codes: qrCodes,
+    entry_code: qrCodes[0]?.entry_code ?? null,
     created_at: ticket.created_at.toISOString(),
+    event_start_date: ticket.event_start_date
+      ? formatDate(ticket.event_start_date)
+      : null,
+    event_end_date: ticket.event_end_date
+      ? formatDate(ticket.event_end_date)
+      : null,
+    event_start_time: ticket.event_start_time
+      ? formatTime(ticket.event_start_time)
+      : null,
+    event_end_time: ticket.event_end_time
+      ? formatTime(ticket.event_end_time)
+      : null,
+    event_location: ticket.event_location ?? null,
   };
 }
 

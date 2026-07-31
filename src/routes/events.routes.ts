@@ -6,6 +6,12 @@ import { asyncHandler } from "../utils/asyncHandler";
 const router = Router();
 
 router.get("/", asyncHandler(eventController.list));
+router.get(
+  "/admin/all",
+  authenticate,
+  requireAdmin,
+  asyncHandler(eventController.listAll)
+);
 router.get("/:id", asyncHandler(eventController.getById));
 router.post("/", authenticate, requireAdmin, asyncHandler(eventController.create));
 router.put("/:id", authenticate, requireAdmin, asyncHandler(eventController.update));

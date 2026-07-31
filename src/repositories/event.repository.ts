@@ -10,6 +10,13 @@ export class EventRepository {
     return result.rows;
   }
 
+  async findAll(): Promise<EventRecord[]> {
+    const result = await pool.query<EventRecord>(
+      `SELECT * FROM events ORDER BY start_date ASC, id DESC`
+    );
+    return result.rows;
+  }
+
   async findById(id: number | string): Promise<EventRecord | null> {
     const result = await pool.query<EventRecord>(
       "SELECT * FROM events WHERE id = $1",
@@ -49,7 +56,11 @@ export class EventRepository {
       currency: string;
       start_date: string;
       end_date: string;
+      start_time: string;
+      end_time: string;
       location: string;
+      latitude?: number | null;
+      longitude?: number | null;
       category: string;
       capacity: number;
       image_url?: string;
@@ -59,9 +70,10 @@ export class EventRepository {
     const result = await client.query<EventRecord>(
       `INSERT INTO events (
          title, description, price, currency, start_date, end_date,
-         location, category, capacity, available_tickets, image_url, status
+         start_time, end_time,
+         location, latitude, longitude, category, capacity, available_tickets, image_url, status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13, $14, $15)
        RETURNING *`,
       [
         data.title,
@@ -70,7 +82,11 @@ export class EventRepository {
         data.currency,
         data.start_date,
         data.end_date,
+        data.start_time,
+        data.end_time,
         data.location,
+        data.latitude ?? null,
+        data.longitude ?? null,
         data.category,
         data.capacity,
         data.image_url ?? null,
@@ -90,7 +106,11 @@ export class EventRepository {
       currency: string;
       start_date: string;
       end_date: string;
+      start_time: string;
+      end_time: string;
       location: string;
+      latitude?: number | null;
+      longitude?: number | null;
       category: string;
       capacity: number;
       available_tickets: number;
@@ -106,14 +126,18 @@ export class EventRepository {
          currency = $4,
          start_date = $5,
          end_date = $6,
-         location = $7,
-         category = $8,
-         capacity = $9,
-         available_tickets = $10,
-         image_url = $11,
-         status = $12,
+         start_time = $7,
+         end_time = $8,
+         location = $9,
+         latitude = $10,
+         longitude = $11,
+         category = $12,
+         capacity = $13,
+         available_tickets = $14,
+         image_url = $15,
+         status = $16,
          updated_at = NOW()
-       WHERE id = $13
+       WHERE id = $17
        RETURNING *`,
       [
         data.title,
@@ -122,7 +146,11 @@ export class EventRepository {
         data.currency,
         data.start_date,
         data.end_date,
+        data.start_time,
+        data.end_time,
         data.location,
+        data.latitude ?? null,
+        data.longitude ?? null,
         data.category,
         data.capacity,
         data.available_tickets,
@@ -146,6 +174,20 @@ export class EventRepository {
   ): Promise<void> {
     await client.query(
       "UPDATE events SET available_tickets = available_tickets - $1, updated_at = NOW() WHERE id = $2",
+      [quantity, eventId]
+    );
+  }
+
+  async incrementAvailableTickets(
+    client: PoolClient,
+    eventId: number,
+    quantity: number
+  ): Promise<void> {
+    await client.query(
+      `UPDATE events SET
+         available_tickets = LEAST(capacity, available_tickets + $1),
+         updated_at = NOW()
+       WHERE id = $2`,
       [quantity, eventId]
     );
   }

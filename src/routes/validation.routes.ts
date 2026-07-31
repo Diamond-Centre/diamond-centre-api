@@ -13,6 +13,13 @@ router.post(
 );
 
 router.post(
+  "/entry-code",
+  authenticate,
+  requireAdmin,
+  asyncHandler(validationController.validateEntryCode)
+);
+
+router.post(
   "/mobile-checkin",
   authenticate,
   asyncHandler(validationController.mobileCheckin)

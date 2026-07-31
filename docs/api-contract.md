@@ -189,10 +189,18 @@
   "quantity": 2,
   "total_price": 10000,
   "currency": "XAF",
-  "status": "pending",
+  "status": "confirme",
   "qr_codes": [
-    "dc_100_abc123",
-    "dc_100_def456"
+    {
+      "code": "dc_100_abc123",
+      "entry_code": "48291573",
+      "validated": false
+    },
+    {
+      "code": "dc_100_def456",
+      "entry_code": "71930428",
+      "validated": false
+    }
   ],
   "expires_at": "2026-10-10T14:00:00Z"
 }
@@ -209,16 +217,18 @@
   "quantity": 2,
   "total_price": 10000,
   "currency": "XAF",
-  "status": "confirmed",
+  "status": "confirme",
   "customer_name": "Jean Dupont",
   "customer_email": "jean@example.com",
   "qr_codes": [
     {
       "code": "dc_100_abc123",
+      "entry_code": "48291573",
       "validated": false
     },
     {
       "code": "dc_100_def456",
+      "entry_code": "71930428",
       "validated": false
     }
   ],
@@ -302,6 +312,8 @@
   "ticket_id": 100,
   "event_title": "Conférence IA",
   "customer_name": "Jean Dupont",
+  "entry_code": "48291573",
+  "qr_code": "dc_100_abc123",
   "validated_at": "2026-10-10T14:30:00Z"
 }
 ```
@@ -313,6 +325,19 @@
   "error": "Ticket already validated"
 }
 ```
+
+### POST /api/validation/entry-code
+
+Admin manual validation using the 8-digit number printed under the QR.
+
+**Request:**
+```json
+{
+  "entry_code": "48291573"
+}
+```
+
+**Response:** same shape as `/api/validation/scan`.
 
 ---
 
@@ -378,6 +403,69 @@
 
 ---
 
+## Certificates (formations)
+
+Certificates can only be issued for events with `category: "formation"` and tickets with `status: "confirme"` or `"scanne"`.
+
+### GET /api/certificates/eligible?event_id=2
+**Auth:** admin  
+Lists confirmed attendees not yet certified.
+
+### POST /api/certificates/issue
+**Auth:** admin
+```json
+{
+  "event_id": 2,
+  "ticket_ids": [3, 4]
+}
+```
+Omit `ticket_ids` to issue for all confirmed tickets of the formation.
+
+### GET /api/certificates?event_id=2
+**Auth:** admin — list issued certificates for a formation.
+
+### GET /api/certificates/me
+**Auth:** user — list my certificates.
+
+### GET /api/certificates/me/:code
+**Auth:** user — my certificate detail.
+
+### GET /api/certificates/me/:code/html
+**Auth:** user — Diamond Centre HTML certificate (print / WebView).
+
+### GET /api/certificates/:code
+Public verification payload.
+
+### GET /api/certificates/:code/html
+Public HTML certificate template render.
+
+**Certificate JSON shape:**
+```json
+{
+  "id": 1,
+  "code": "DICE-2-3-...",
+  "event_id": 2,
+  "ticket_id": 3,
+  "recipient_name": "Amina Fouda",
+  "recipient_email": "amina.fouda@example.com",
+  "formation_title": "Formation Full-Stack JavaScript",
+  "start_date": "2026-09-20",
+  "end_date": "2026-09-27",
+  "location": "Douala - Silicon Mountain Hub",
+  "issuer_name": "Admin",
+  "issued_at": "2026-07-30T12:00:00.000Z",
+  "organization": "Diamond Centre",
+  "template": {
+    "brand": "Diamond Centre",
+    "title": "Certificat de Formation",
+    "subtitle": "Attestation de participation et de réussite",
+    "body": "Certifie que {{recipient_name}} a suivi avec succès la formation « {{formation_title}} »."
+  }
+}
+```
+
+---
+
 ## Enumerations
 
 ### Event Status
@@ -389,12 +477,12 @@
 | completed   | Terminé           |
 
 ### Ticket Status
-| Value     | Description    |
-| --------- | -------------- |
-| pending   | En attente     |
-| confirmed | Confirmé       |
-| cancelled | Annulé         |
-| refunded  | Remboursé      |
+| Value     | Description                                      |
+| --------- | ------------------------------------------------ |
+| confirme  | Payé / valide, prêt à être scanné                |
+| scanne    | Validé à l'entrée (QR ou code 8 chiffres)        |
+| expire    | Expiré (date dépassée ou non utilisé)             |
+| rembourse | Remboursé                                        |
 
 ### Payment Status
 | Value      | Description    |

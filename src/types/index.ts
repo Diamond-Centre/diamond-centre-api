@@ -11,7 +11,8 @@ export type EventCategory =
 
 export type PromotionSexe = "homme" | "femme" | "tous";
 
-export type TicketStatus = "pending" | "confirmed" | "cancelled" | "refunded";
+/** Ticket lifecycle: confirme → scanne | expire | rembourse */
+export type TicketStatus = "confirme" | "scanne" | "expire" | "rembourse";
 
 export type PaymentMethod = "mtn_momo" | "orange_money";
 export type PaymentStatus = "pending" | "successful" | "failed" | "refunded";
@@ -36,7 +37,11 @@ export interface EventRecord {
   currency: string;
   start_date: Date | string;
   end_date: Date | string;
+  start_time: string | Date;
+  end_time: string | Date;
   location: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   category: string;
   capacity: number;
   available_tickets: number;
@@ -60,6 +65,7 @@ export interface PromotionRecord {
 export interface TicketRecord {
   id: number;
   event_id: number;
+  booking_id?: string | null;
   quantity: number;
   total_price: string | number;
   currency: string;
@@ -76,6 +82,7 @@ export interface QrCodeRecord {
   id: number;
   ticket_id: number;
   code: string;
+  entry_code: string;
   validated: boolean;
   validated_at: Date | null;
   ticket_status?: TicketStatus;
@@ -127,7 +134,11 @@ export interface CreateEventInput {
   currency?: string;
   start_date: string;
   end_date: string;
+  start_time?: string;
+  end_time?: string;
   location: string;
+  latitude?: number | null;
+  longitude?: number | null;
   category: string;
   capacity: number;
   image_url?: string;
@@ -142,7 +153,11 @@ export interface UpdateEventInput {
   currency?: string;
   start_date?: string;
   end_date?: string;
+  start_time?: string;
+  end_time?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   category?: string;
   capacity?: number;
   image_url?: string | null;
@@ -173,3 +188,51 @@ export interface MtnCallbackInput {
 export interface ScanQrInput {
   qr_code: string;
 }
+
+export interface CertificateRecord {
+  id: number;
+  code: string;
+  event_id: number;
+  ticket_id: number;
+  user_id: number | null;
+  recipient_name: string;
+  recipient_email: string;
+  formation_title: string;
+  issued_by: number;
+  issued_at: Date;
+  created_at: Date;
+  event_start_date?: Date | string;
+  event_end_date?: Date | string;
+  event_location?: string;
+  issuer_name?: string;
+}
+
+export interface IssueCertificatesInput {
+  event_id: number;
+  ticket_ids?: number[];
+}
+
+
+export interface CertificateRecord {
+  id: number;
+  code: string;
+  event_id: number;
+  ticket_id: number;
+  user_id: number | null;
+  recipient_name: string;
+  recipient_email: string;
+  formation_title: string;
+  issued_by: number;
+  issued_at: Date;
+  created_at: Date;
+  event_start_date?: Date | string;
+  event_end_date?: Date | string;
+  event_location?: string;
+  issuer_name?: string;
+}
+
+export interface IssueCertificatesInput {
+  event_id: number;
+  ticket_ids?: number[];
+}
+

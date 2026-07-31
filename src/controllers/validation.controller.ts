@@ -10,6 +10,14 @@ export class ValidationController {
     res.json(result);
   };
 
+  /** Admin enters the 8-digit code printed under the QR. */
+  validateEntryCode = async (req: AuthRequest, res: Response): Promise<void> => {
+    const result = await validationService.validateByEntryCode(
+      req.body?.entry_code
+    );
+    res.json(result);
+  };
+
   /** Staff phone publishes a DiCe mobile QR check-in (cross-device sync). */
   mobileCheckin = async (req: AuthRequest, res: Response): Promise<void> => {
     const {
