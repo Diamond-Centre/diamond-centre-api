@@ -11,6 +11,12 @@ router.get("/", asyncHandler(userController.list));
 router.get("/stats", asyncHandler(userController.stats));
 router.get("/dashboard", asyncHandler(userController.dashboard));
 router.get("/analytics", asyncHandler(userController.analytics));
+
 router.post("/admins", asyncHandler(userController.createAdmin));
+router.put("/admins/:id", asyncHandler(userController.updateAdmin));
+router.delete("/admins/:id", asyncHandler(userController.deleteAdmin));
+
+router.put("/clients/:id", asyncHandler(userController.updateClient));
+router.delete("/clients/:id", asyncHandler(userController.deleteClient));
 
 export default router;

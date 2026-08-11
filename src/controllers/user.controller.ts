@@ -2,6 +2,8 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import { userService } from "../services/user.service";
 import { dashboardService } from "../services/dashboard.service";
+import { parseIdParam } from "../utils/params";
+import { UnauthorizedError } from "../errors/AppError";
 
 export class UserController {
   list = async (_req: AuthRequest, res: Response): Promise<void> => {
@@ -27,6 +29,33 @@ export class UserController {
   createAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
     const user = await userService.createAdmin(req.body);
     res.status(201).json(user);
+  };
+
+  updateClient = async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = parseIdParam(req.params.id);
+    const user = await userService.updateClient(id, req.body);
+    res.json(user);
+  };
+
+  updateAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = parseIdParam(req.params.id);
+    const user = await userService.updateAdmin(id, req.body);
+    res.json(user);
+  };
+
+  deleteClient = async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = parseIdParam(req.params.id);
+    const result = await userService.deleteClient(id);
+    res.json(result);
+  };
+
+  deleteAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = parseIdParam(req.params.id);
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const result = await userService.deleteAdmin(id, req.user.id);
+    res.json(result);
   };
 }
 

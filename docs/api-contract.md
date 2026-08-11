@@ -32,6 +32,7 @@
       "event_id": 1,
       "nombre": 50,
       "sexe": "tous",
+      "reduction": 20,
       "pourcentage": 20,
       "prix_promo": 4000,
       "duree": 7,
@@ -67,6 +68,7 @@
     "event_id": 1,
     "nombre": 50,
     "sexe": "tous",
+    "reduction": 20,
     "pourcentage": 20,
     "prix_promo": 4000,
     "duree": 7,
@@ -95,11 +97,7 @@
   "image_url": "https://example.com/event.jpg",
   "status": "published",
   "promotion": {
-    "nombre": 50,
-    "sexe": "tous",
-    "pourcentage": 20,
-    "duree": 7,
-    "description": "Promo early bird"
+    "reduction": 20
   }
 }
 ```
@@ -117,16 +115,19 @@
   "promotion": {
     "id": 1,
     "event_id": 1,
-    "nombre": 50,
+    "nombre": 999999,
     "sexe": "tous",
+    "reduction": 20,
     "pourcentage": 20,
     "prix_promo": 4000,
-    "duree": 7,
-    "description": "Promo early bird",
+    "duree": 30,
+    "description": null,
     "created_at": "2026-01-01T00:00:00Z"
   }
 }
 ```
+
+> For `promotion`, only **`reduction`** (1–100) is required. Optional: `nombre` (default 999999), `sexe` (default `tous`), `duree` (default 30), `description`. `pourcentage` is accepted as an alias of `reduction`.
 
 ### PUT /api/events/:id
 
@@ -141,11 +142,7 @@
   "end_date": "2026-10-13",
   "status": "published",
   "promotion": {
-    "nombre": 30,
-    "sexe": "tous",
-    "pourcentage": 15,
-    "duree": 5,
-    "description": "Promo mise a jour"
+    "reduction": 15
   }
 }
 ```
@@ -396,10 +393,80 @@ Admin manual validation using the 8-digit number printed under the QR.
     "telephone": "+237670000000",
     "sexe": "homme",
     "picture": "https://example.com/avatar.jpg",
+    "auth_provider": "local",
     "created_at": "2026-01-01T00:00:00Z"
   }
 }
 ```
+
+### POST /api/auth/google
+
+Login or register a client with a Google token from the mobile/web SDK.
+
+**Request:**
+```json
+{
+  "id_token": "<google-id-token>",
+  "telephone": "+237670000000",
+  "sexe": "homme"
+}
+```
+
+Or with an access token:
+```json
+{
+  "access_token": "<google-access-token>"
+}
+```
+
+**Response:** same shape as `/api/auth/login` (`auth_provider: "google"`).
+
+### POST /api/auth/facebook
+
+**Request:**
+```json
+{
+  "access_token": "<facebook-access-token>",
+  "telephone": "+237670000000",
+  "sexe": "femme"
+}
+```
+
+**Response:** same shape as `/api/auth/login` (`auth_provider: "facebook"`).
+
+---
+
+## Users (admin)
+
+All routes require `Authorization: Bearer <admin_jwt>`.
+
+### PUT /api/users/clients/:id
+
+**Request (any subset):**
+```json
+{
+  "name": "Marie Ngono",
+  "email": "marie@example.com",
+  "telephone": "+237670000002",
+  "sexe": "femme",
+  "picture": "https://example.com/marie.jpg",
+  "password": "NewPass@123"
+}
+```
+
+### PUT /api/users/admins/:id
+
+Same body as update client.
+
+### DELETE /api/users/clients/:id
+
+**Response:** `{ "message": "Client deleted" }`
+
+### DELETE /api/users/admins/:id
+
+Cannot delete yourself or the last admin.
+
+**Response:** `{ "message": "Admin deleted" }`
 
 ---
 

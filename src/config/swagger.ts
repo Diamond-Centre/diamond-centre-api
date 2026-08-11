@@ -22,6 +22,7 @@ const swaggerDocument = {
   tags: [
     { name: "Health", description: "Etat du service" },
     { name: "Auth", description: "Authentification" },
+    { name: "Users", description: "Gestion des utilisateurs (admin)" },
     { name: "Events", description: "Gestion des evenements" },
     { name: "Tickets", description: "Reservation de tickets" },
     { name: "Payments", description: "Paiements Mobile Money" },
@@ -62,6 +63,10 @@ const swaggerDocument = {
           telephone: { type: "string", example: "+237670000000" },
           sexe: { type: "string", enum: ["homme", "femme"] },
           picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
+          auth_provider: {
+            type: "string",
+            enum: ["local", "google", "facebook"],
+          },
           created_at: { type: "string", format: "date-time" },
         },
       },
@@ -104,15 +109,20 @@ const swaggerDocument = {
           event_id: { type: "integer", example: 1 },
           nombre: { type: "integer", example: 50 },
           sexe: { type: "string", enum: ["homme", "femme", "tous"] },
+          reduction: {
+            type: "number",
+            example: 20,
+            description: "Pourcentage de reduction (1-100) — seul champ obligatoire a la creation",
+          },
           pourcentage: {
             type: "number",
             example: 20,
-            description: "Pourcentage de reduction (1-100)",
+            description: "Alias de reduction (compatibilite)",
           },
           prix_promo: {
             type: "number",
             example: 4000,
-            description: "Prix calcule: price * (1 - pourcentage / 100)",
+            description: "Prix calcule: price * (1 - reduction / 100)",
           },
           duree: { type: "integer", example: 7, description: "Duree en jours" },
           description: { type: "string" },
@@ -121,12 +131,25 @@ const swaggerDocument = {
       },
       CreatePromotionRequest: {
         type: "object",
-        required: ["nombre", "sexe", "pourcentage", "duree"],
+        required: ["reduction"],
         properties: {
-          nombre: { type: "integer", example: 50 },
-          sexe: { type: "string", enum: ["homme", "femme", "tous"] },
-          pourcentage: { type: "number", example: 20 },
-          duree: { type: "integer", example: 7 },
+          reduction: {
+            type: "number",
+            example: 20,
+            description: "Seul champ obligatoire (1-100). Alias: pourcentage",
+          },
+          pourcentage: {
+            type: "number",
+            example: 20,
+            description: "Alias de reduction",
+          },
+          nombre: { type: "integer", example: 50, description: "Optionnel (defaut: 999999)" },
+          sexe: {
+            type: "string",
+            enum: ["homme", "femme", "tous"],
+            description: "Optionnel (defaut: tous)",
+          },
+          duree: { type: "integer", example: 7, description: "Optionnel (defaut: 30 jours)" },
           description: { type: "string" },
         },
       },
@@ -326,6 +349,32 @@ const swaggerDocument = {
           user: { $ref: "#/components/schemas/User" },
         },
       },
+      SocialAuthRequest: {
+        type: "object",
+        properties: {
+          id_token: {
+            type: "string",
+            description: "Google ID token (preferred for Google)",
+          },
+          access_token: {
+            type: "string",
+            description: "Google or Facebook access token",
+          },
+          telephone: { type: "string" },
+          sexe: { type: "string", enum: ["homme", "femme"] },
+        },
+      },
+      UpdateUserRequest: {
+        type: "object",
+        properties: {
+          email: { type: "string", format: "email" },
+          password: { type: "string", format: "password" },
+          name: { type: "string" },
+          telephone: { type: "string" },
+          sexe: { type: "string", enum: ["homme", "femme"] },
+          picture: { type: "string", format: "uri" },
+        },
+      },
     },
   },
   paths: {
@@ -405,6 +454,134 @@ const swaggerDocument = {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
               },
             },
+          },
+        },
+      },
+    },
+    "/api/auth/google": {
+      post: {
+        tags: ["Auth"],
+        summary: "Connexion / inscription via Google",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SocialAuthRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Connexion reussie",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/LoginResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/auth/facebook": {
+      post: {
+        tags: ["Auth"],
+        summary: "Connexion / inscription via Facebook",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/SocialAuthRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Connexion reussie",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/LoginResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/users/admins/{id}": {
+      put: {
+        tags: ["Users"],
+        summary: "Modifier un admin",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateUserRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Admin mis a jour",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ["Users"],
+        summary: "Supprimer un admin",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        responses: {
+          "200": {
+            description: "Admin supprime",
+          },
+        },
+      },
+    },
+    "/api/users/clients/{id}": {
+      put: {
+        tags: ["Users"],
+        summary: "Modifier un client",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateUserRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Client mis a jour",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/User" },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ["Users"],
+        summary: "Supprimer un client",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        responses: {
+          "200": {
+            description: "Client supprime",
           },
         },
       },

@@ -18,17 +18,48 @@ import {
 import { formatDate, formatTime, isValidTime } from "../utils/date";
 import { eventChangeService } from "./event_change.service";
 
-function validatePromotion(promotion: CreatePromotionInput): void {
-  const { nombre, sexe, pourcentage, duree } = promotion;
-  if (nombre == null || !sexe || pourcentage == null || duree == null) {
-    throw new BadRequestError("Missing required promotion fields");
+function normalizePromotion(promotion: CreatePromotionInput): {
+  nombre: number;
+  sexe: "homme" | "femme" | "tous";
+  pourcentage: number;
+  duree: number;
+  description?: string;
+} {
+  const reductionRaw =
+    promotion.reduction != null ? promotion.reduction : promotion.pourcentage;
+
+  if (reductionRaw == null) {
+    throw new BadRequestError("promotion.reduction is required");
   }
+
+  const pourcentage = Number(reductionRaw);
+  if (!Number.isFinite(pourcentage) || pourcentage <= 0 || pourcentage > 100) {
+    throw new BadRequestError("promotion.reduction must be between 1 and 100");
+  }
+
+  const nombre =
+    promotion.nombre != null ? Number(promotion.nombre) : 999999;
+  if (!Number.isFinite(nombre) || nombre <= 0) {
+    throw new BadRequestError("Invalid promotion.nombre");
+  }
+
+  const sexe = promotion.sexe ?? "tous";
   if (!isValidPromotionSexe(sexe)) {
     throw new BadRequestError("Invalid promotion sexe");
   }
-  if (nombre <= 0 || pourcentage <= 0 || pourcentage > 100 || duree <= 0) {
-    throw new BadRequestError("Invalid promotion values");
+
+  const duree = promotion.duree != null ? Number(promotion.duree) : 30;
+  if (!Number.isFinite(duree) || duree <= 0) {
+    throw new BadRequestError("Invalid promotion.duree");
   }
+
+  return {
+    nombre,
+    sexe,
+    pourcentage,
+    duree,
+    description: promotion.description,
+  };
 }
 
 function normalizeTimes(input: {
@@ -122,8 +153,10 @@ export class EventService {
       throw new BadRequestError("end_date must be on or after start_date");
     }
 
+    let normalizedPromotion: ReturnType<typeof normalizePromotion> | null =
+      null;
     if (promotion) {
-      validatePromotion(promotion);
+      normalizedPromotion = normalizePromotion(promotion);
     }
 
     const { start_time, end_time } = normalizeTimes(input);
@@ -149,14 +182,10 @@ export class EventService {
       });
 
       let createdPromotion: PromotionRecord | null = null;
-      if (promotion) {
+      if (normalizedPromotion) {
         createdPromotion = await promotionRepository.create(client, {
           event_id: event.id,
-          nombre: promotion.nombre,
-          sexe: promotion.sexe,
-          pourcentage: promotion.pourcentage,
-          duree: promotion.duree,
-          description: promotion.description,
+          ...normalizedPromotion,
         });
       }
 
@@ -196,10 +225,6 @@ export class EventService {
 
       if (input.status != null && !isValidEventStatus(input.status)) {
         throw new BadRequestError("Invalid status");
-      }
-
-      if (input.promotion) {
-        validatePromotion(input.promotion);
       }
 
       const capacity = input.capacity ?? existing.capacity;
@@ -256,13 +281,10 @@ export class EventService {
         await promotionRepository.deleteByEventId(client, existing.id);
         promotion = null;
       } else if (input.promotion) {
+        const normalized = normalizePromotion(input.promotion);
         promotion = await promotionRepository.upsert(client, {
           event_id: existing.id,
-          nombre: input.promotion.nombre,
-          sexe: input.promotion.sexe,
-          pourcentage: input.promotion.pourcentage,
-          duree: input.promotion.duree,
-          description: input.promotion.description,
+          ...normalized,
         });
       } else {
         promotion = await promotionRepository.findByEventId(existing.id);

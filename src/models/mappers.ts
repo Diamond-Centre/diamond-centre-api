@@ -20,6 +20,7 @@ export function toUserResponse(user: UserRecord) {
     telephone: user.telephone,
     sexe: user.sexe,
     picture: user.picture,
+    auth_provider: user.auth_provider ?? "local",
     created_at: user.created_at.toISOString(),
   };
 }
@@ -42,6 +43,7 @@ export function toPromotionResponse(
     event_id: promotion.event_id,
     nombre: promotion.nombre,
     sexe: promotion.sexe,
+    reduction: pourcentage,
     pourcentage,
     prix_promo: calculatePromoPrice(eventPrice, pourcentage),
     duree: promotion.duree,

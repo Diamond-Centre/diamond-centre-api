@@ -1,12 +1,15 @@
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
   name VARCHAR(255) NOT NULL,
   role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'client')),
-  telephone VARCHAR(50) NOT NULL,
-  sexe VARCHAR(20) NOT NULL CHECK (sexe IN ('homme', 'femme')),
-  picture TEXT NOT NULL,
+  telephone VARCHAR(50) NOT NULL DEFAULT '',
+  sexe VARCHAR(20) NOT NULL DEFAULT 'homme' CHECK (sexe IN ('homme', 'femme')),
+  picture TEXT NOT NULL DEFAULT '',
+  auth_provider VARCHAR(20) NOT NULL DEFAULT 'local'
+    CHECK (auth_provider IN ('local', 'google', 'facebook')),
+  provider_id VARCHAR(255),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -161,6 +164,32 @@ BEGIN
   ) THEN
     ALTER TABLE users
       ADD CONSTRAINT users_sexe_check CHECK (sexe IN ('homme', 'femme'));
+  END IF;
+
+  -- OAuth / social login columns
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users'
+      AND column_name = 'auth_provider'
+  ) THEN
+    ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) NOT NULL DEFAULT 'local';
+    ALTER TABLE users ADD COLUMN provider_id VARCHAR(255);
+    ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+    BEGIN
+      ALTER TABLE users
+        ADD CONSTRAINT users_auth_provider_check
+        CHECK (auth_provider IN ('local', 'google', 'facebook'));
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE indexname = 'idx_users_provider'
+  ) THEN
+    CREATE UNIQUE INDEX idx_users_provider
+      ON users (auth_provider, provider_id)
+      WHERE provider_id IS NOT NULL;
   END IF;
 
   IF NOT EXISTS (

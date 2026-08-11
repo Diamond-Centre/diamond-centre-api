@@ -1,5 +1,6 @@
 export type UserRole = "admin" | "client";
 export type UserSexe = "homme" | "femme";
+export type AuthProvider = "local" | "google" | "facebook";
 
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 export type EventCategory =
@@ -20,12 +21,14 @@ export type PaymentStatus = "pending" | "successful" | "failed" | "refunded";
 export interface UserRecord {
   id: number;
   email: string;
-  password_hash: string;
+  password_hash: string | null;
   name: string;
   role: UserRole;
   telephone: string;
   sexe: UserSexe;
   picture: string;
+  auth_provider: AuthProvider;
+  provider_id: string | null;
   created_at: Date;
 }
 
@@ -119,11 +122,30 @@ export interface LoginInput {
   password: string;
 }
 
+export interface UpdateUserInput {
+  email?: string;
+  password?: string;
+  name?: string;
+  telephone?: string;
+  sexe?: UserSexe;
+  picture?: string;
+}
+
+export interface SocialAuthInput {
+  id_token?: string;
+  access_token?: string;
+  telephone?: string;
+  sexe?: UserSexe;
+}
+
 export interface CreatePromotionInput {
-  nombre: number;
-  sexe: PromotionSexe;
-  pourcentage: number;
-  duree: number;
+  /** Discount percentage 1–100 (preferred name). */
+  reduction?: number;
+  /** Alias of reduction (backward compatible). */
+  pourcentage?: number;
+  nombre?: number;
+  sexe?: PromotionSexe;
+  duree?: number;
   description?: string;
 }
 
