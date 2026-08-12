@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
-    "build": "tsc && mkdir -p dist/db && cp src/db/schema.sql dist/db/schema.sql && cp src/db/seed.sql dist/db/seed.sql",
+    "build": "npx tsc && mkdir -p dist/db && cp src/db/schema.sql dist/db/schema.sql && cp src/db/seed.sql dist/db/seed.sql",
     "start": "node dist/index.js",
     "db:start": "bash scripts/db-start.sh",
     "db:stop": "bash scripts/db-stop.sh",
