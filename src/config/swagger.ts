@@ -1,4 +1,3 @@
-import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
 
 const swaggerDocument = {
@@ -991,6 +990,10 @@ export function setupSwagger(app: Express): void {
   if (process.env.NODE_ENV === "production" && process.env.ENABLE_SWAGGER !== "true") {
     return;
   }
+
+  // Lazy-load so production Vercel functions do not import swagger-ui-express
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const swaggerUi = require("swagger-ui-express") as typeof import("swagger-ui-express");
 
   app.get("/api-docs.json", (_req, res) => {
     res.json(swaggerDocument);

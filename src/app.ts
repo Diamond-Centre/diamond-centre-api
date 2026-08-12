@@ -12,9 +12,11 @@ import { runMigrations } from "./db/migrate";
 import { ensureDefaultAdmin } from "./db/ensureDefaultAdmin";
 
 dotenv.config();
-assertSecurityConfig();
 
 export const app = express();
+
+// Vercel / proxies send X-Forwarded-For; required by express-rate-limit.
+app.set("trust proxy", 1);
 
 app.use(
   helmet({
@@ -81,12 +83,12 @@ let bootPromise: Promise<void> | null = null;
 
 /** Run once per cold start (Vercel) or before listen (local). */
 export async function ensureBootstrapped(): Promise<void> {
+  assertSecurityConfig();
   if (!bootPromise) {
     bootPromise = (async () => {
       const ok = await testConnection();
       if (!ok) {
-        console.warn("PostgreSQL not available during bootstrap");
-        return;
+        throw new Error("PostgreSQL is not available");
       }
       await runMigrations();
       await ensureDefaultAdmin();
@@ -98,23 +100,13 @@ export async function ensureBootstrapped(): Promise<void> {
   await bootPromise;
 }
 
-// Bootstrap DB before any route (needed on Vercel cold starts)
-app.use(async (_req, _res, next) => {
-  try {
-    await ensureBootstrapped();
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
 const uploadPath = process.env.UPLOAD_PATH || "uploads";
 app.use("/uploads", express.static(uploadPath));
 app.use("/brand", express.static("public/brand"));
 
 setupSwagger(app);
 
-app.get("/health", (_req, res) => {
+app.get(["/health", "/api/health"], (_req, res) => {
   res.json({
     status: "ok",
     service: "diamond-centre-api",
@@ -122,7 +114,7 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.get("/", (_req, res) => {
+app.get(["/", "/api"], (_req, res) => {
   res.json({
     message: "Diamond Centre API",
     version: "1.0.0",
@@ -133,6 +125,29 @@ app.get("/", (_req, res) => {
       openapi: isProduction() ? undefined : "/api-docs.json",
     },
   });
+});
+
+function isPublicPath(path: string): boolean {
+  return path === "/health" || path === "/api/health" || path === "/" || path === "/api";
+}
+
+// Bootstrap DB before API routes (needed on Vercel cold starts)
+app.use(async (req, res, next) => {
+  if (isPublicPath(req.path)) {
+    next();
+    return;
+  }
+  try {
+    await ensureBootstrapped();
+    next();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Bootstrap failed";
+    console.error("Bootstrap failed:", err);
+    res.status(503).json({
+      error: "Service Unavailable",
+      message,
+    });
+  }
 });
 
 app.use("/api", apiRoutes);
