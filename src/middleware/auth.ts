@@ -25,13 +25,30 @@ export function authenticate(
   }
 }
 
+/** Admin panel access: admin or super_admin. */
 export function requireAdmin(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void {
-  if (req.user?.role !== "admin") {
+  if (req.user?.role !== "admin" && req.user?.role !== "super_admin") {
     res.status(403).json({ error: "Forbidden", message: "Admin access required" });
+    return;
+  }
+  next();
+}
+
+/** Only the bootstrap super admin may create/delete other admins. */
+export function requireSuperAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.user?.role !== "super_admin") {
+    res.status(403).json({
+      error: "Forbidden",
+      message: "Super admin access required",
+    });
     return;
   }
   next();

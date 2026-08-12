@@ -205,6 +205,8 @@
 
 ### GET /api/tickets/:id
 
+**Auth:** Bearer (admin/super_admin, or client whose email matches `customer_email`)
+
 **Response:**
 ```json
 {
@@ -239,6 +241,8 @@
 
 ### POST /api/payments/initiate
 
+**Auth:** Bearer (ticket owner email or admin)
+
 **Request:**
 ```json
 {
@@ -265,6 +269,8 @@
 
 ### POST /api/payments/callback/mtn
 
+**Auth:** header `X-Payment-Callback-Secret: <PAYMENT_CALLBACK_SECRET>`
+
 **Request (MTN callback):**
 ```json
 {
@@ -275,6 +281,8 @@
 ```
 
 ### GET /api/payments/:id/status
+
+**Auth:** Bearer (ticket owner email or admin)
 
 **Response:**
 ```json
@@ -342,13 +350,14 @@ Admin manual validation using the 8-digit number printed under the QR.
 
 ### POST /api/auth/register
 
+Public registration **always creates a `client`**. Admin accounts cannot be self-registered.
+
 **Request:**
 ```json
 {
-  "email": "admin@diamondcentre.com",
+  "email": "client@example.com",
   "password": "securepassword",
-  "name": "Admin",
-  "role": "admin",
+  "name": "Jean Dupont",
   "telephone": "+237670000000",
   "sexe": "homme",
   "picture": "https://example.com/avatar.jpg"
@@ -358,16 +367,31 @@ Admin manual validation using the 8-digit number printed under the QR.
 **Response (201):**
 ```json
 {
-  "id": 1,
-  "email": "admin@diamondcentre.com",
-  "name": "Admin",
-  "role": "admin",
+  "id": 2,
+  "email": "client@example.com",
+  "name": "Jean Dupont",
+  "role": "client",
   "telephone": "+237670000000",
   "sexe": "homme",
   "picture": "https://example.com/avatar.jpg",
+  "auth_provider": "local",
   "created_at": "2026-01-01T00:00:00Z"
 }
 ```
+
+### Roles
+
+| Role | Who creates it | Can do |
+|------|----------------|--------|
+| `super_admin` | Bootstrapped once (`admin@dice.cm` / `Admin@123` by default) | Full admin + create/update/delete other admins |
+| `admin` | Only `super_admin` via `POST /api/users/admins` | Manage events, tickets, validation, clients |
+| `client` | Public register / Google / Facebook | Book tickets, view own data |
+
+### POST /api/users/admins
+
+**Auth:** Bearer **super_admin** only
+
+Creates a regular `admin` (never another `super_admin`).
 
 ### POST /api/auth/login
 

@@ -8,12 +8,34 @@ import {
   toPaymentStatusResponse,
 } from "../models/mappers";
 import { generatePaymentReference } from "../utils/qr";
-import { BadRequestError, NotFoundError } from "../errors/AppError";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../errors/AppError";
 import { InitiatePaymentInput, MtnCallbackInput, PaymentMethod } from "../types";
 import { notificationService } from "./notification.service";
+import { isAdminRole } from "../models/mappers";
+import { JwtPayload } from "../utils/jwt";
+
+function assertOwnsTicketEmail(user: JwtPayload, customerEmail: string) {
+  if (isAdminRole(user.role)) return;
+  if (
+    user.email &&
+    customerEmail &&
+    user.email.toLowerCase() === customerEmail.toLowerCase()
+  ) {
+    return;
+  }
+  throw new ForbiddenError("You do not have access to this payment");
+}
 
 export class PaymentService {
-  async initiate(input: InitiatePaymentInput & { ticketId?: number }) {
+  async initiate(
+    input: InitiatePaymentInput & { ticketId?: number },
+    user: JwtPayload
+  ) {
     const ticket_id = Number(
       (input as { ticket_id?: number; ticketId?: number }).ticket_id ??
         (input as { ticketId?: number }).ticketId
@@ -36,6 +58,8 @@ export class PaymentService {
     if (!ticket) {
       throw new NotFoundError("Ticket not found");
     }
+
+    assertOwnsTicketEmail(user, ticket.customer_email);
 
     if (ticket.status !== "confirme") {
       throw new BadRequestError("Ticket is not payable in its current status");
@@ -161,11 +185,17 @@ export class PaymentService {
     });
   }
 
-  async getStatus(id: number | string) {
+  async getStatus(id: number | string, user: JwtPayload) {
+    if (!user) throw new UnauthorizedError("Unauthorized");
     const payment = await paymentRepository.findById(id);
     if (!payment) {
       throw new NotFoundError("Payment not found");
     }
+    const ticket = await ticketRepository.findById(payment.ticket_id);
+    if (!ticket) {
+      throw new NotFoundError("Ticket not found");
+    }
+    assertOwnsTicketEmail(user, ticket.customer_email);
     return toPaymentStatusResponse(payment);
   }
 

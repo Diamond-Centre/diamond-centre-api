@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255),
   name VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'client')),
+  role VARCHAR(50) NOT NULL CHECK (role IN ('super_admin', 'admin', 'client')),
   telephone VARCHAR(50) NOT NULL DEFAULT '',
   sexe VARCHAR(20) NOT NULL DEFAULT 'homme' CHECK (sexe IN ('homme', 'femme')),
   picture TEXT NOT NULL DEFAULT '',
@@ -198,6 +198,17 @@ BEGIN
   ) THEN
     ALTER TABLE events ADD COLUMN start_time TIME NOT NULL DEFAULT '09:00';
     ALTER TABLE events ADD COLUMN end_time TIME NOT NULL DEFAULT '18:00';
+  END IF;
+
+  -- Allow super_admin role
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
+  ) THEN
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+    ALTER TABLE users
+      ADD CONSTRAINT users_role_check
+      CHECK (role IN ('super_admin', 'admin', 'client'));
   END IF;
 END $$;
 

@@ -30,7 +30,7 @@ export class CertificateController {
 
   getByCode = async (req: AuthRequest, res: Response): Promise<void> => {
     const code = String(req.params.code);
-    const isAdmin = req.user?.role === "admin";
+    const isAdmin = req.user?.role === "admin" || req.user?.role === "super_admin";
     const certificate = await certificateService.getByCode(
       code,
       req.user?.email,
@@ -50,7 +50,7 @@ export class CertificateController {
 
   renderHtml = async (req: AuthRequest, res: Response): Promise<void> => {
     const code = String(req.params.code);
-    const isAdmin = req.user?.role === "admin";
+    const isAdmin = req.user?.role === "admin" || req.user?.role === "super_admin";
     const certificate =
       isAdmin || !req.user
         ? await certificateService.getByCode(code)
@@ -63,7 +63,7 @@ export class CertificateController {
 
   downloadPdf = async (req: AuthRequest, res: Response): Promise<void> => {
     const code = String(req.params.code);
-    const isAdmin = req.user?.role === "admin";
+    const isAdmin = req.user?.role === "admin" || req.user?.role === "super_admin";
     const certificate =
       isAdmin || !req.user
         ? await certificateService.getByCode(code)

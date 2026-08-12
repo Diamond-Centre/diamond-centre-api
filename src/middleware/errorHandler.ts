@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../errors/AppError";
+import { isProduction } from "../utils/security";
 
 export function errorHandler(
   err: Error,
@@ -18,6 +19,8 @@ export function errorHandler(
   console.error(err);
   res.status(500).json({
     error: "Internal Server Error",
-    message: err.message,
+    message: isProduction()
+      ? "An unexpected error occurred"
+      : err.message,
   });
 }

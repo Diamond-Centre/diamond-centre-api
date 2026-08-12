@@ -145,23 +145,37 @@ export class UserRepository {
 
   async countAdmins(): Promise<number> {
     const result = await pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM users WHERE role = 'admin'`
+      `SELECT COUNT(*)::text AS count
+       FROM users
+       WHERE role IN ('admin', 'super_admin')`
     );
     return parseInt(result.rows[0]?.count ?? "0", 10) || 0;
   }
 
-  async countByRole(): Promise<{ admins: number; clients: number; total: number }> {
+  async countByRole(): Promise<{
+    super_admins: number;
+    admins: number;
+    clients: number;
+    total: number;
+  }> {
     const result = await pool.query<{ role: string; count: string }>(
       `SELECT role, COUNT(*)::text AS count FROM users GROUP BY role`
     );
+    let super_admins = 0;
     let admins = 0;
     let clients = 0;
     for (const row of result.rows) {
       const n = parseInt(row.count, 10);
+      if (row.role === "super_admin") super_admins = n;
       if (row.role === "admin") admins = n;
       if (row.role === "client") clients = n;
     }
-    return { admins, clients, total: admins + clients };
+    return {
+      super_admins,
+      admins,
+      clients,
+      total: super_admins + admins + clients,
+    };
   }
 
   async findByIdAndRole(

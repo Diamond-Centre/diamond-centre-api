@@ -59,7 +59,7 @@ const swaggerDocument = {
           id: { type: "integer", example: 1 },
           email: { type: "string", format: "email" },
           name: { type: "string" },
-          role: { type: "string", enum: ["admin", "client"] },
+          role: { type: "string", enum: ["super_admin", "admin", "client"] },
           telephone: { type: "string", example: "+237670000000" },
           sexe: { type: "string", enum: ["homme", "femme"] },
           picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
@@ -321,12 +321,16 @@ const swaggerDocument = {
       },
       RegisterRequest: {
         type: "object",
-        required: ["email", "password", "name", "role", "telephone", "sexe", "picture"],
+        required: ["email", "password", "name", "telephone", "sexe", "picture"],
         properties: {
           email: { type: "string", format: "email" },
           password: { type: "string", format: "password" },
           name: { type: "string" },
-          role: { type: "string", enum: ["admin", "client"] },
+          role: {
+            type: "string",
+            enum: ["client"],
+            description: "Optional; public register always creates client",
+          },
           telephone: { type: "string", example: "+237670000000" },
           sexe: { type: "string", enum: ["homme", "femme"] },
           picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
@@ -983,6 +987,11 @@ const swaggerDocument = {
 };
 
 export function setupSwagger(app: Express): void {
+  // Hide OpenAPI UI in production unless ENABLE_SWAGGER=true
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_SWAGGER !== "true") {
+    return;
+  }
+
   app.get("/api-docs.json", (_req, res) => {
     res.json(swaggerDocument);
   });

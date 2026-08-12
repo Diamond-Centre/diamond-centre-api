@@ -11,8 +11,10 @@ import {
 } from "../models/mappers";
 import { formatDate } from "../utils/date";
 import { generateEntryCode, generateQrCode } from "../utils/qr";
-import { BadRequestError, NotFoundError } from "../errors/AppError";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { ReserveTicketInput, TicketRecord } from "../types";
+import { JwtPayload } from "../utils/jwt";
+import { isAdminRole } from "../models/mappers";
 
 export class TicketService {
   async list() {
@@ -110,11 +112,18 @@ export class TicketService {
     });
   }
 
-  async getById(id: number | string) {
+  async getById(id: number | string, user: JwtPayload) {
     await ticketRepository.expireOverdue();
     const ticket = await ticketRepository.findByIdWithEvent(id);
     if (!ticket) {
       throw new NotFoundError("Ticket not found");
+    }
+
+    if (
+      !isAdminRole(user.role) &&
+      user.email?.toLowerCase() !== ticket.customer_email.toLowerCase()
+    ) {
+      throw new ForbiddenError("You do not have access to this ticket");
     }
 
     const qrCodes = await qrCodeRepository.findByTicketId(ticket.id);

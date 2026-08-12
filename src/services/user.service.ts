@@ -42,6 +42,7 @@ export class UserService {
       `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0A89F2&color=fff`;
 
     const passwordHash = await bcrypt.hash(password, 10);
+    // Regular admins only — never create another super_admin via API
     const user = await userRepository.create({
       email: email.trim().toLowerCase(),
       passwordHash,
@@ -69,13 +70,16 @@ export class UserService {
 
   async deleteAdmin(id: number, actorId: number) {
     if (id === actorId) {
-      throw new ForbiddenError("You cannot delete your own admin account");
+      throw new ForbiddenError("You cannot delete your own account");
     }
-    const adminCount = await userRepository.countAdmins();
-    if (adminCount <= 1) {
-      throw new ForbiddenError("Cannot delete the last admin");
+
+    const target = await userRepository.findById(id);
+    if (!target || target.role !== "admin") {
+      throw new NotFoundError("Admin not found");
     }
-    return this.deleteByRole(id, "admin");
+
+    await userRepository.deleteById(id);
+    return { message: "Admin deleted" };
   }
 
   private async updateByRole(

@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "client";
+export type UserRole = "super_admin" | "admin" | "client";
 export type UserSexe = "homme" | "femme";
 export type AuthProvider = "local" | "google" | "facebook";
 
@@ -111,7 +111,8 @@ export interface RegisterInput {
   email: string;
   password: string;
   name: string;
-  role: UserRole;
+  /** Ignored on public register — always created as client. */
+  role?: UserRole;
   telephone: string;
   sexe: UserSexe;
   picture: string;

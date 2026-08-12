@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -17,9 +17,30 @@ function getConnectionString(): string {
   return `postgres://${user}:${password}@${host}:${port}/${database}`;
 }
 
-export const pool = new Pool({
-  connectionString: getConnectionString(),
-});
+function buildPoolConfig(): PoolConfig {
+  const connectionString = getConnectionString();
+  const isLocal = /localhost|127\.0\.0\.1/.test(connectionString);
+  const needsSsl =
+    (!isLocal &&
+      (/sslmode=require/i.test(connectionString) ||
+        /\.neon\.tech/i.test(connectionString) ||
+        process.env.NODE_ENV === "production" ||
+        process.env.DB_SSL === "true")) ||
+    process.env.DB_SSL === "true";
+
+  const config: PoolConfig = { connectionString };
+
+  if (needsSsl) {
+    // Neon requires TLS. Set DB_SSL_REJECT_UNAUTHORIZED=false only if needed.
+    config.ssl = {
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false",
+    };
+  }
+
+  return config;
+}
+
+export const pool = new Pool(buildPoolConfig());
 
 export async function testConnection(): Promise<boolean> {
   try {

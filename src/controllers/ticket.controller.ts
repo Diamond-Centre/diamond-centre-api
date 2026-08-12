@@ -1,20 +1,26 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { ticketService } from "../services/ticket.service";
 import { parseIdParam } from "../utils/params";
+import { AuthRequest } from "../middleware/auth";
+import { UnauthorizedError } from "../errors/AppError";
 
 export class TicketController {
-  list = async (_req: Request, res: Response): Promise<void> => {
+  list = async (_req: AuthRequest, res: Response): Promise<void> => {
     const tickets = await ticketService.list();
     res.json(tickets);
   };
 
-  reserve = async (req: Request, res: Response): Promise<void> => {
+  reserve = async (req: AuthRequest, res: Response): Promise<void> => {
     const ticket = await ticketService.reserve(req.body);
     res.status(201).json(ticket);
   };
 
-  getById = async (req: Request, res: Response): Promise<void> => {
-    const ticket = await ticketService.getById(parseIdParam(req.params.id));
+  getById = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user) throw new UnauthorizedError("Unauthorized");
+    const ticket = await ticketService.getById(
+      parseIdParam(req.params.id),
+      req.user
+    );
     res.json(ticket);
   };
 }

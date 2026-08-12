@@ -202,7 +202,11 @@ export function toPaymentStatusResponse(payment: PaymentRecord) {
 }
 
 export function isValidUserRole(role: string): role is UserRole {
-  return role === "admin" || role === "client";
+  return role === "super_admin" || role === "admin" || role === "client";
+}
+
+export function isAdminRole(role: string | undefined): boolean {
+  return role === "admin" || role === "super_admin";
 }
 
 export function isValidUserSexe(sexe: string): sexe is UserSexe {

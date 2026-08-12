@@ -7,7 +7,6 @@ import {
 import { userRepository } from "../repositories/user.repository";
 import {
   toUserResponse,
-  isValidUserRole,
   isValidUserSexe,
 } from "../models/mappers";
 import { BadRequestError, UnauthorizedError } from "../errors/AppError";
@@ -37,22 +36,21 @@ function authTokens(user: UserRecord) {
 
 export class AuthService {
   async register(input: RegisterInput) {
-    const { email, password, name, role, telephone, sexe, picture } = input;
+    const { email, password, name, telephone, sexe, picture } = input;
 
-    if (
-      !email ||
-      !password ||
-      !name ||
-      !role ||
-      !telephone ||
-      !sexe ||
-      !picture
-    ) {
+    if (!email || !password || !name || !telephone || !sexe || !picture) {
       throw new BadRequestError("Missing required fields");
     }
 
-    if (!isValidUserRole(role)) {
-      throw new BadRequestError("Invalid role");
+    // Public registration is always client — never admin / super_admin
+    if (input.role && input.role !== "client") {
+      throw new BadRequestError(
+        "Public registration only creates client accounts. Contact a super admin for admin access."
+      );
+    }
+
+    if (password.length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters");
     }
 
     if (!isValidUserSexe(sexe)) {
@@ -64,7 +62,7 @@ export class AuthService {
       email: email.trim().toLowerCase(),
       passwordHash,
       name: name.trim(),
-      role,
+      role: "client",
       telephone: telephone.replace(/\s+/g, ""),
       sexe,
       picture,
@@ -125,35 +123,42 @@ export class AuthService {
       throw new BadRequestError("Invalid sexe");
     }
 
-    let user =
-      (await userRepository.findByProvider(provider, profile.providerId)) ||
-      (await userRepository.findByEmail(profile.email));
+    let user = await userRepository.findByProvider(
+      provider,
+      profile.providerId
+    );
+
+    if (!user) {
+      const byEmail = await userRepository.findByEmail(profile.email);
+      if (byEmail) {
+        // Do not silently take over email/password accounts
+        if (
+          byEmail.auth_provider === "local" ||
+          (byEmail.password_hash && !byEmail.provider_id)
+        ) {
+          throw new BadRequestError(
+            "An account with this email already exists. Log in with email and password."
+          );
+        }
+        if (
+          byEmail.auth_provider !== provider ||
+          byEmail.provider_id !== profile.providerId
+        ) {
+          throw new BadRequestError(
+            `This email is already linked to ${byEmail.auth_provider} login`
+          );
+        }
+        user = byEmail;
+      }
+    }
 
     if (user) {
-      // Link provider if logging in with social on an existing email account
       const patch: {
-        authProvider?: AuthProvider;
-        providerId?: string;
         name?: string;
         picture?: string;
         telephone?: string;
         sexe?: string;
       } = {};
-
-      if (!user.provider_id || user.auth_provider === "local") {
-        patch.authProvider = provider;
-        patch.providerId = profile.providerId;
-      } else if (
-        user.auth_provider !== provider ||
-        user.provider_id !== profile.providerId
-      ) {
-        // Same email already linked to another social account
-        if (user.auth_provider !== provider) {
-          throw new BadRequestError(
-            `This email is already linked to ${user.auth_provider} login`
-          );
-        }
-      }
 
       if (profile.name && profile.name !== user.name) patch.name = profile.name;
       if (profile.picture) patch.picture = profile.picture;
