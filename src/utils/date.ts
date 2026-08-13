@@ -32,3 +32,13 @@ export function formatTime(value: unknown): string {
 export function isValidTime(value: string): boolean {
   return /^\d{2}:\d{2}$/.test(value);
 }
+
+/** Calendar date (YYYY-MM-DD) in the server's local timezone. */
+export function todayDate(): string {
+  return formatDate(new Date());
+}
+
+/** True when the calendar date is strictly before today. */
+export function isDateBeforeToday(value: unknown): boolean {
+  return formatDate(value) < todayDate();
+}

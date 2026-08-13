@@ -7,8 +7,7 @@ export type EventCategory =
   | "conference"
   | "formation"
   | "seminaire"
-  | "atelier"
-  | "webinaire";
+  | "atelier";
 
 export type PromotionSexe = "homme" | "femme" | "tous";
 

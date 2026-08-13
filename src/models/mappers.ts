@@ -1,5 +1,6 @@
 import { formatDate, formatTime } from "../utils/date";
 import {
+  EventCategory,
   EventRecord,
   EventStatus,
   PaymentRecord,
@@ -215,6 +216,12 @@ export function isValidUserSexe(sexe: string): sexe is UserSexe {
 
 export function isValidEventStatus(status: string): status is EventStatus {
   return ["draft", "published", "cancelled", "completed"].includes(status);
+}
+
+export function isValidEventCategory(
+  category: string
+): category is EventCategory {
+  return ["conference", "formation", "seminaire", "atelier"].includes(category);
 }
 
 export function isValidPromotionSexe(sexe: string): sexe is PromotionSexe {

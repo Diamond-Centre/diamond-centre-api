@@ -41,10 +41,10 @@ INSERT INTO events (
   'published'
 ),
 (
-  'Webinaire Mobile Money & Fintech',
-  'Session en ligne sur les paiements MTN MoMo, Orange Money et les APIs fintech.',
+  'Conférence Mobile Money & Fintech',
+  'Session sur les paiements MTN MoMo, Orange Money et les APIs fintech.',
   2000, 'XAF', '2026-10-18', '2026-10-18',
-  'En ligne (Zoom)', 'webinaire', 500, 478,
+  'Yaoundé - Palais des Congrès', 'conference', 500, 478,
   'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800',
   'published'
 ),
@@ -69,7 +69,7 @@ INSERT INTO promotions (event_id, nombre, sexe, pourcentage, duree, description)
 (1, 50, 'tous', 20, 14, 'Early bird -20% sur la conférence IA'),
 (2, 15, 'femme', 30, 10, 'Promo femmes en tech -30%'),
 (4, 10, 'tous', 15, 7, 'Réduction atelier UI/UX'),
-(5, 100, 'tous', 50, 5, 'Promo lancement webinaire -50%');
+(5, 100, 'tous', 50, 5, 'Promo lancement conférence fintech -50%');
 
 -- Tickets linked to published events (promo prices applied where relevant)
 -- Event 1: 5000 * 0.8 = 4000

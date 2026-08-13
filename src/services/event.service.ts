@@ -6,6 +6,7 @@ import {
   toEventResponse,
   toPromotionResponse,
   isValidEventStatus,
+  isValidEventCategory,
   isValidPromotionSexe,
 } from "../models/mappers";
 import { BadRequestError, NotFoundError } from "../errors/AppError";
@@ -15,7 +16,7 @@ import {
   PromotionRecord,
   UpdateEventInput,
 } from "../types";
-import { formatDate, formatTime, isValidTime } from "../utils/date";
+import { formatDate, formatTime, isDateBeforeToday, isValidTime } from "../utils/date";
 import { eventChangeService } from "./event_change.service";
 
 function normalizePromotion(promotion: CreatePromotionInput): {
@@ -153,6 +154,19 @@ export class EventService {
       throw new BadRequestError("end_date must be on or after start_date");
     }
 
+    if (!isValidEventCategory(category)) {
+      throw new BadRequestError(
+        "Invalid category (conference, formation, seminaire, atelier)"
+      );
+    }
+
+    // Start date may already be in the past; end date may not.
+    if (isDateBeforeToday(end_date)) {
+      throw new BadRequestError(
+        "Cannot create an event whose end date has already passed"
+      );
+    }
+
     let normalizedPromotion: ReturnType<typeof normalizePromotion> | null =
       null;
     if (promotion) {
@@ -225,6 +239,12 @@ export class EventService {
 
       if (input.status != null && !isValidEventStatus(input.status)) {
         throw new BadRequestError("Invalid status");
+      }
+
+      if (input.category != null && !isValidEventCategory(input.category)) {
+        throw new BadRequestError(
+          "Invalid category (conference, formation, seminaire, atelier)"
+        );
       }
 
       const capacity = input.capacity ?? existing.capacity;

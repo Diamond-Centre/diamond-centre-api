@@ -82,7 +82,7 @@ const swaggerDocument = {
           location: { type: "string", example: "Yaounde" },
           category: {
             type: "string",
-            enum: ["conference", "formation", "seminaire", "atelier", "webinaire"],
+            enum: ["conference", "formation", "seminaire", "atelier"],
           },
           capacity: { type: "integer", example: 200 },
           available_tickets: { type: "integer", example: 150 },

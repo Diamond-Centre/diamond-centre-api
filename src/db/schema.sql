@@ -441,3 +441,6 @@ CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_change
   ON ticket_change_responses(change_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_ticket
   ON ticket_change_responses(ticket_id);
+
+-- Webinaire is no longer a valid event category
+UPDATE events SET category = 'conference' WHERE category = 'webinaire';
