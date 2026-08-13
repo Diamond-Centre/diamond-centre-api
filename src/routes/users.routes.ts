@@ -16,6 +16,7 @@ router.put("/me", asyncHandler(userController.updateMe));
 router.delete("/me", asyncHandler(userController.deleteMe));
 router.put("/me/password", asyncHandler(userController.changeMyPassword));
 router.get("/me/sessions", asyncHandler(userController.listMySessions));
+router.get("/me/sessions/current", asyncHandler(userController.pingMySession));
 router.delete(
   "/me/sessions/others",
   asyncHandler(userController.revokeOtherSessions)

@@ -63,6 +63,13 @@ export class UserController {
     res.json({ sessions });
   };
 
+  pingMySession = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    res.json({ ok: true, sid: req.user.sid || null });
+  };
+
   revokeOtherSessions = async (req: AuthRequest, res: Response): Promise<void> => {
     if (!req.user?.id) {
       throw new UnauthorizedError("Unauthorized");
