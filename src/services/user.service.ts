@@ -85,6 +85,25 @@ export class UserService {
     return toUserResponse(updated);
   }
 
+  /** Client self-service account deletion (admins use admin routes). */
+  async deleteMe(userId: number) {
+    const existing = await userRepository.findById(userId);
+    if (!existing) {
+      throw new NotFoundError("User not found");
+    }
+    if (existing.role !== "client") {
+      throw new ForbiddenError(
+        "Admin accounts cannot be deleted from this endpoint"
+      );
+    }
+
+    const deleted = await userRepository.deleteById(userId);
+    if (!deleted) {
+      throw new NotFoundError("User not found");
+    }
+    return { message: "Account deleted" };
+  }
+
   /** Password change for the authenticated super_admin only (enforced by route). */
   async changeMyPassword(
     userId: number,

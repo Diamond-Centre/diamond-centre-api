@@ -13,6 +13,7 @@ router.use(authenticate);
 
 router.get("/me", asyncHandler(userController.getMe));
 router.put("/me", asyncHandler(userController.updateMe));
+router.delete("/me", asyncHandler(userController.deleteMe));
 router.put(
   "/me/password",
   requireSuperAdmin,

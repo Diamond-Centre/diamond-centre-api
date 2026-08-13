@@ -50,6 +50,14 @@ export class UserController {
     res.json(result);
   };
 
+  deleteMe = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const result = await userService.deleteMe(req.user.id);
+    res.json(result);
+  };
+
   createAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
     const user = await userService.createAdmin(req.body);
     res.status(201).json(user);
