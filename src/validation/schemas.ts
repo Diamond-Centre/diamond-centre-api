@@ -7,7 +7,10 @@ export const registerSchema = z.object({
   role: z.enum(["client"]).optional(),
   telephone: z.string().min(6).max(50),
   sexe: z.enum(["homme", "femme"]),
-  picture: z.string().min(1).max(2000),
+  picture: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().max(400_000).optional()
+  ),
 });
 
 export const loginSchema = z.object({

@@ -9,7 +9,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate);
 
 router.get("/me", asyncHandler(userController.getMe));
 router.put("/me", asyncHandler(userController.updateMe));
@@ -18,6 +18,8 @@ router.put(
   requireSuperAdmin,
   asyncHandler(userController.changeMyPassword)
 );
+
+router.use(requireAdmin);
 
 router.get("/", asyncHandler(userController.list));
 router.get("/stats", asyncHandler(userController.stats));

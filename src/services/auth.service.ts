@@ -34,11 +34,17 @@ function authTokens(user: UserRecord) {
   };
 }
 
+function defaultAvatar(name: string): string {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name.trim() || "User"
+  )}&background=0a89f2&color=fff&size=128`;
+}
+
 export class AuthService {
   async register(input: RegisterInput) {
-    const { email, password, name, telephone, sexe, picture } = input;
+    const { email, password, name, telephone, sexe } = input;
 
-    if (!email || !password || !name || !telephone || !sexe || !picture) {
+    if (!email || !password || !name || !telephone || !sexe) {
       throw new BadRequestError("Missing required fields");
     }
 
@@ -56,6 +62,11 @@ export class AuthService {
     if (!isValidUserSexe(sexe)) {
       throw new BadRequestError("Invalid sexe");
     }
+
+    const picture =
+      input.picture && input.picture.trim()
+        ? input.picture.trim()
+        : defaultAvatar(name);
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await userRepository.create({

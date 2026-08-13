@@ -320,7 +320,7 @@ const swaggerDocument = {
       },
       RegisterRequest: {
         type: "object",
-        required: ["email", "password", "name", "telephone", "sexe", "picture"],
+        required: ["email", "password", "name", "telephone", "sexe"],
         properties: {
           email: { type: "string", format: "email" },
           password: { type: "string", format: "password" },
@@ -332,7 +332,11 @@ const swaggerDocument = {
           },
           telephone: { type: "string", example: "+237670000000" },
           sexe: { type: "string", enum: ["homme", "femme"] },
-          picture: { type: "string", format: "uri", example: "https://example.com/avatar.jpg" },
+          picture: {
+            type: "string",
+            description:
+              "Optional HTTP URL or compressed data:image/...;base64,...",
+          },
         },
       },
       LoginRequest: {

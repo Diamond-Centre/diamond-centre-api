@@ -114,7 +114,7 @@ export interface RegisterInput {
   role?: UserRole;
   telephone: string;
   sexe: UserSexe;
-  picture: string;
+  picture?: string;
 }
 
 export interface LoginInput {

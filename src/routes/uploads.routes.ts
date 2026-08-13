@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { Router } from "express";
-import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
+import { authenticate, AuthRequest } from "../middleware/auth";
 import { asyncHandler } from "../utils/asyncHandler";
 import { BadRequestError } from "../errors/AppError";
 import { Response } from "express";
@@ -101,7 +101,6 @@ export const uploadController = new UploadController();
 router.post(
   "/image",
   authenticate,
-  requireAdmin,
   asyncHandler(uploadController.uploadImage)
 );
 
