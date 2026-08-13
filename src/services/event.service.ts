@@ -312,7 +312,7 @@ export class EventService {
         ),
       });
 
-      const changeId = await eventChangeService.notifyScheduleChange(
+      const notified = await eventChangeService.notifyScheduleChange(
         client,
         existing,
         updated,
@@ -335,8 +335,9 @@ export class EventService {
 
       return {
         ...toEventResponse(updated, promotion),
-        schedule_change_id: changeId,
-        clients_notified: changeId != null,
+        schedule_change_id: notified?.changeId ?? null,
+        clients_notified: Boolean(notified),
+        clients_notified_count: notified?.notifiedCount ?? 0,
       };
     });
   }

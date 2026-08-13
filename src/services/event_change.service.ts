@@ -58,7 +58,7 @@ export class EventChangeService {
     existing: EventRecord,
     updated: EventRecord,
     adminUserId: number | null
-  ): Promise<number | null> {
+  ): Promise<{ changeId: number; notifiedCount: number } | null> {
     const next = {
       start_date: formatDate(updated.start_date),
       end_date: formatDate(updated.end_date),
@@ -104,6 +104,8 @@ export class EventChangeService {
       next.location
     );
 
+    let notifiedCount = 0;
+
     for (const ticket of tickets) {
       await eventChangeRepository.createResponse(client, change.id, ticket.id);
 
@@ -115,7 +117,7 @@ export class EventChangeService {
 
       if (!user) continue;
 
-      await notificationRepository.create(
+      const created = await notificationRepository.create(
         {
           user_id: user.id,
           type: "modification",
@@ -128,9 +130,10 @@ export class EventChangeService {
         },
         client
       );
+      if (created) notifiedCount += 1;
     }
 
-    return change.id;
+    return { changeId: change.id, notifiedCount };
   }
 
   private async assertTicketOwner(
