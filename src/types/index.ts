@@ -138,6 +138,11 @@ export interface SocialAuthInput {
   sexe?: UserSexe;
 }
 
+export interface SessionContext {
+  userAgent?: string;
+  ip?: string | null;
+}
+
 export interface CreatePromotionInput {
   /** Discount percentage 1–100 (preferred name). */
   reduction?: number;

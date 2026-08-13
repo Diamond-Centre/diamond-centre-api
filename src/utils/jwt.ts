@@ -4,6 +4,8 @@ export interface JwtPayload {
   id: number;
   email: string;
   role: string;
+  /** Server-side session id; required for new tokens. */
+  sid?: string;
 }
 
 function getSecret(key: "JWT_SECRET" | "REFRESH_TOKEN_SECRET"): string {

@@ -442,6 +442,47 @@ CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_change
 CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_ticket
   ON ticket_change_responses(ticket_id);
 
+-- Server-side sessions so devices can be listed and revoked
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_agent TEXT NOT NULL DEFAULT '',
+  ip VARCHAR(64),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_active
+  ON user_sessions(user_id)
+  WHERE revoked_at IS NULL;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'user_sessions'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'user_sessions'
+        AND column_name = 'expires_at'
+    ) THEN
+      ALTER TABLE user_sessions
+        ADD COLUMN expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 day';
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'user_sessions'
+        AND column_name = 'revoked_at'
+    ) THEN
+      ALTER TABLE user_sessions ADD COLUMN revoked_at TIMESTAMPTZ;
+    END IF;
+  END IF;
+END $$;
+
 -- Webinaire is no longer a valid event category
 UPDATE events SET category = 'conference' WHERE category = 'webinaire';
 

@@ -22,6 +22,7 @@ export function toUserResponse(user: UserRecord) {
     sexe: user.sexe,
     picture: user.picture,
     auth_provider: user.auth_provider ?? "local",
+    has_password: Boolean(user.password_hash),
     created_at: user.created_at.toISOString(),
   };
 }

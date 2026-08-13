@@ -14,9 +14,11 @@ import {
   AuthProvider,
   LoginInput,
   RegisterInput,
+  SessionContext,
   SocialAuthInput,
   UserRecord,
 } from "../types";
+import { sessionRepository } from "../repositories/session.repository";
 import {
   verifyFacebookAccessToken,
   verifyGoogleAccessToken,
@@ -24,8 +26,19 @@ import {
   OAuthProfile,
 } from "./oauth.service";
 
-function authTokens(user: UserRecord) {
-  const payload = { id: user.id, email: user.email, role: user.role };
+async function authTokens(user: UserRecord, ctx: SessionContext = {}) {
+  const session = await sessionRepository.create({
+    userId: user.id,
+    userAgent: ctx.userAgent || "",
+    ip: ctx.ip || null,
+    expiresAt: new Date(Date.now() + getExpiresInSeconds() * 1000),
+  });
+  const payload = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    sid: session.id,
+  };
   return {
     access_token: signAccessToken(payload),
     refresh_token: signRefreshToken(payload),
@@ -41,7 +54,7 @@ function defaultAvatar(name: string): string {
 }
 
 export class AuthService {
-  async register(input: RegisterInput) {
+  async register(input: RegisterInput, ctx: SessionContext = {}) {
     const { email, password, name, telephone, sexe } = input;
 
     if (!email || !password || !name || !telephone || !sexe) {
@@ -80,10 +93,10 @@ export class AuthService {
       authProvider: "local",
     });
     // Same shape as login so the client can enter their space immediately
-    return authTokens(user);
+    return authTokens(user, ctx);
   }
 
-  async login(input: LoginInput) {
+  async login(input: LoginInput, ctx: SessionContext = {}) {
     const { email, password } = input;
 
     if (!email || !password) {
@@ -100,10 +113,10 @@ export class AuthService {
       throw new UnauthorizedError("Invalid credentials");
     }
 
-    return authTokens(user);
+    return authTokens(user, ctx);
   }
 
-  async authGoogle(input: SocialAuthInput) {
+  async authGoogle(input: SocialAuthInput, ctx: SessionContext = {}) {
     const token = String(input.id_token || input.access_token || "").trim();
     if (!token) {
       throw new BadRequestError("id_token or access_token is required");
@@ -113,23 +126,24 @@ export class AuthService {
       ? await verifyGoogleIdToken(token)
       : await verifyGoogleAccessToken(token);
 
-    return this.socialLogin("google", profile, input);
+    return this.socialLogin("google", profile, input, ctx);
   }
 
-  async authFacebook(input: SocialAuthInput) {
+  async authFacebook(input: SocialAuthInput, ctx: SessionContext = {}) {
     const accessToken = String(input.access_token || "").trim();
     if (!accessToken) {
       throw new BadRequestError("access_token is required");
     }
 
     const profile = await verifyFacebookAccessToken(accessToken);
-    return this.socialLogin("facebook", profile, input);
+    return this.socialLogin("facebook", profile, input, ctx);
   }
 
   private async socialLogin(
     provider: AuthProvider,
     profile: OAuthProfile,
-    input: SocialAuthInput
+    input: SocialAuthInput,
+    ctx: SessionContext = {}
   ) {
     if (input.sexe && !isValidUserSexe(input.sexe)) {
       throw new BadRequestError("Invalid sexe");
@@ -181,7 +195,7 @@ export class AuthService {
         user = (await userRepository.update(user.id, patch)) ?? user;
       }
 
-      return authTokens(user);
+      return authTokens(user, ctx);
     }
 
     const name = profile.name;
@@ -197,7 +211,7 @@ export class AuthService {
       providerId: profile.providerId,
     });
 
-    return authTokens(userCreated);
+    return authTokens(userCreated, ctx);
   }
 }
 

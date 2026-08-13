@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken, JwtPayload } from "../utils/jwt";
+import { sessionRepository } from "../repositories/session.repository";
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -16,13 +17,36 @@ export function authenticate(
     return;
   }
 
+  let payload: JwtPayload;
   try {
-    const token = header.slice(7);
-    req.user = verifyAccessToken(token);
-    next();
+    payload = verifyAccessToken(header.slice(7));
   } catch {
     res.status(401).json({ error: "Unauthorized", message: "Invalid or expired token" });
+    return;
   }
+
+  // Legacy tokens issued before sessions: still valid until they expire.
+  if (!payload.sid) {
+    req.user = payload;
+    next();
+    return;
+  }
+
+  sessionRepository
+    .findActiveById(payload.sid)
+    .then((session) => {
+      if (!session || session.user_id !== payload.id) {
+        res.status(401).json({
+          error: "Unauthorized",
+          message: "Invalid or expired token",
+        });
+        return;
+      }
+      req.user = payload;
+      sessionRepository.touch(session.id).catch(() => undefined);
+      next();
+    })
+    .catch(next);
 }
 
 /** Admin panel access: admin or super_admin. */

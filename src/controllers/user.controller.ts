@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import { userService } from "../services/user.service";
+import { sessionService } from "../services/session.service";
 import { dashboardService } from "../services/dashboard.service";
 import { parseIdParam } from "../utils/params";
 import { UnauthorizedError } from "../errors/AppError";
@@ -46,7 +47,27 @@ export class UserController {
     if (!req.user?.id) {
       throw new UnauthorizedError("Unauthorized");
     }
-    const result = await userService.changeMyPassword(req.user.id, req.body);
+    const result = await userService.changeMyPassword(
+      req.user.id,
+      req.body,
+      req.user.sid
+    );
+    res.json(result);
+  };
+
+  listMySessions = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const sessions = await sessionService.listMine(req.user.id, req.user.sid);
+    res.json({ sessions });
+  };
+
+  revokeOtherSessions = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const result = await sessionService.revokeOthers(req.user.id, req.user.sid);
     res.json(result);
   };
 

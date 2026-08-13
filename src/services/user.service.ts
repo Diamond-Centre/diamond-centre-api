@@ -1,4 +1,5 @@
 import { userRepository } from "../repositories/user.repository";
+import { sessionRepository } from "../repositories/session.repository";
 import { toUserResponse, isValidUserSexe } from "../models/mappers";
 import {
   BadRequestError,
@@ -104,10 +105,11 @@ export class UserService {
     return { message: "Account deleted" };
   }
 
-  /** Password change for the authenticated super_admin only (enforced by route). */
+  /** Self-service password change for any authenticated user. */
   async changeMyPassword(
     userId: number,
-    input: { current_password?: string; new_password?: string }
+    input: { current_password?: string; new_password?: string },
+    currentSid?: string
   ) {
     const currentPassword = input.current_password;
     const newPassword = input.new_password;
@@ -123,9 +125,6 @@ export class UserService {
     if (!user) {
       throw new NotFoundError("User not found");
     }
-    if (user.role !== "super_admin") {
-      throw new ForbiddenError("Only a super admin can change their password here");
-    }
     if (!user.password_hash) {
       throw new BadRequestError("This account has no local password");
     }
@@ -137,6 +136,11 @@ export class UserService {
 
     const passwordHash = await bcrypt.hash(String(newPassword), 10);
     await userRepository.update(userId, { passwordHash });
+    if (currentSid) {
+      await sessionRepository.revokeOthers(userId, currentSid);
+    } else {
+      await sessionRepository.revokeAll(userId);
+    }
     return { message: "Password updated" };
   }
 
@@ -263,6 +267,9 @@ export class UserService {
       throw new NotFoundError(
         role === "admin" ? "Admin not found" : "Client not found"
       );
+    }
+    if (patch.passwordHash) {
+      await sessionRepository.revokeAll(id);
     }
     return toUserResponse(updated);
   }

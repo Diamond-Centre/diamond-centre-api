@@ -14,10 +14,11 @@ router.use(authenticate);
 router.get("/me", asyncHandler(userController.getMe));
 router.put("/me", asyncHandler(userController.updateMe));
 router.delete("/me", asyncHandler(userController.deleteMe));
-router.put(
-  "/me/password",
-  requireSuperAdmin,
-  asyncHandler(userController.changeMyPassword)
+router.put("/me/password", asyncHandler(userController.changeMyPassword));
+router.get("/me/sessions", asyncHandler(userController.listMySessions));
+router.delete(
+  "/me/sessions/others",
+  asyncHandler(userController.revokeOtherSessions)
 );
 
 router.use(requireAdmin);
