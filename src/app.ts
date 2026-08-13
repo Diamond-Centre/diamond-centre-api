@@ -152,3 +152,6 @@ app.use(async (req, res, next) => {
 
 app.use("/api", apiRoutes);
 app.use(errorHandler);
+
+// Vercel Express runtime requires a default export (function or server).
+export default app;

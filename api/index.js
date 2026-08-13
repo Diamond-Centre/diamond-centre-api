@@ -1,7 +1,5 @@
 /**
- * Vercel serverless entry — exports the Express app.
- * Must be CommonJS (package has no "type": "module").
- * Build with `npm run build` so dist/ is available.
+ * Vercel serverless entry — default export must be the Express app.
  */
 const path = require("path");
 
@@ -14,7 +12,10 @@ function loadApp() {
   let lastError;
   for (const candidate of candidates) {
     try {
-      return require(candidate).app;
+      const mod = require(candidate);
+      const app = mod.default || mod.app;
+      if (typeof app === "function") return app;
+      lastError = new Error(`Invalid export in ${candidate}`);
     } catch (err) {
       lastError = err;
     }
@@ -22,18 +23,6 @@ function loadApp() {
   throw lastError;
 }
 
-try {
-  module.exports = loadApp();
-} catch (err) {
-  console.error("Failed to load Express app:", err);
-  module.exports = (_req, res) => {
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify({
-        error: "FUNCTION_LOAD_FAILED",
-        message: err instanceof Error ? err.message : String(err),
-      })
-    );
-  };
-}
+const app = loadApp();
+module.exports = app;
+module.exports.default = app;
