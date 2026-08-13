@@ -4,6 +4,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
+  UnauthorizedError,
 } from "../errors/AppError";
 import bcrypt from "bcryptjs";
 import { UpdateUserInput, UserRole } from "../types";
@@ -14,8 +15,110 @@ export class UserService {
     return users.map(toUserResponse);
   }
 
+  async getById(id: number) {
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+    return toUserResponse(user);
+  }
+
   async stats() {
     return userRepository.countByRole();
+  }
+
+  /** Self-service profile update (no password — that is super_admin only). */
+  async updateMe(
+    userId: number,
+    input: {
+      name?: string;
+      telephone?: string;
+      sexe?: string;
+      picture?: string;
+      password?: string;
+    }
+  ) {
+    if (input.password !== undefined) {
+      throw new ForbiddenError(
+        "Only a super admin can change a password. Use the password endpoint."
+      );
+    }
+
+    const existing = await userRepository.findById(userId);
+    if (!existing) {
+      throw new NotFoundError("User not found");
+    }
+
+    const patch: {
+      name?: string;
+      telephone?: string;
+      sexe?: string;
+      picture?: string;
+    } = {};
+
+    if (input.name !== undefined) {
+      const name = String(input.name).trim();
+      if (!name) throw new BadRequestError("name cannot be empty");
+      patch.name = name;
+    }
+    if (input.telephone !== undefined) {
+      patch.telephone = String(input.telephone).replace(/\s+/g, "");
+    }
+    if (input.sexe !== undefined) {
+      if (!isValidUserSexe(input.sexe)) {
+        throw new BadRequestError("Invalid sexe");
+      }
+      patch.sexe = input.sexe;
+    }
+    if (input.picture !== undefined) {
+      patch.picture = String(input.picture);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      throw new BadRequestError("No fields to update");
+    }
+
+    const updated = await userRepository.update(userId, patch);
+    if (!updated) {
+      throw new NotFoundError("User not found");
+    }
+    return toUserResponse(updated);
+  }
+
+  /** Password change for the authenticated super_admin only (enforced by route). */
+  async changeMyPassword(
+    userId: number,
+    input: { current_password?: string; new_password?: string }
+  ) {
+    const currentPassword = input.current_password;
+    const newPassword = input.new_password;
+
+    if (!currentPassword || !newPassword) {
+      throw new BadRequestError("current_password and new_password are required");
+    }
+    if (String(newPassword).length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters");
+    }
+
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+    if (user.role !== "super_admin") {
+      throw new ForbiddenError("Only a super admin can change their password here");
+    }
+    if (!user.password_hash) {
+      throw new BadRequestError("This account has no local password");
+    }
+
+    const valid = await bcrypt.compare(String(currentPassword), user.password_hash);
+    if (!valid) {
+      throw new UnauthorizedError("Current password is incorrect");
+    }
+
+    const passwordHash = await bcrypt.hash(String(newPassword), 10);
+    await userRepository.update(userId, { passwordHash });
+    return { message: "Password updated" };
   }
 
   async createAdmin(input: {

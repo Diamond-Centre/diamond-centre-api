@@ -26,6 +26,30 @@ export class UserController {
     res.json(stats);
   };
 
+  getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const user = await userService.getById(req.user.id);
+    res.json(user);
+  };
+
+  updateMe = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const user = await userService.updateMe(req.user.id, req.body);
+    res.json(user);
+  };
+
+  changeMyPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new UnauthorizedError("Unauthorized");
+    }
+    const result = await userService.changeMyPassword(req.user.id, req.body);
+    res.json(result);
+  };
+
   createAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
     const user = await userService.createAdmin(req.body);
     res.status(201).json(user);

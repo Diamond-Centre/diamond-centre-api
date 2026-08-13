@@ -11,12 +11,20 @@ const router = Router();
 
 router.use(authenticate, requireAdmin);
 
+router.get("/me", asyncHandler(userController.getMe));
+router.put("/me", asyncHandler(userController.updateMe));
+router.put(
+  "/me/password",
+  requireSuperAdmin,
+  asyncHandler(userController.changeMyPassword)
+);
+
 router.get("/", asyncHandler(userController.list));
 router.get("/stats", asyncHandler(userController.stats));
 router.get("/dashboard", asyncHandler(userController.dashboard));
 router.get("/analytics", asyncHandler(userController.analytics));
 
-// Only super_admin may create / delete admins
+// Only super_admin may create / update / delete admins
 router.post(
   "/admins",
   requireSuperAdmin,
