@@ -59,6 +59,25 @@ export class UploadController {
       throw new BadRequestError("Image too large (max 6MB)");
     }
 
+    // Vercel (and similar serverless hosts) have an ephemeral / read-only FS.
+    // Persist as a data URL so images still work without object storage.
+    const serverless =
+      process.env.VERCEL === "1" ||
+      process.env.UPLOAD_MODE === "data_url" ||
+      process.env.UPLOAD_MODE === "inline";
+
+    if (serverless) {
+      const url = `data:${mime};base64,${raw}`;
+      res.status(201).json({
+        url,
+        filename: `inline_${Date.now()}.${ext}`,
+        size: buffer.length,
+        mime_type: mime,
+        storage: "data_url",
+      });
+      return;
+    }
+
     ensureUploadDir();
     const filename = `event_${Date.now()}_${Math.random()
       .toString(36)
@@ -72,6 +91,7 @@ export class UploadController {
       filename,
       size: buffer.length,
       mime_type: mime,
+      storage: "disk",
     });
   };
 }
