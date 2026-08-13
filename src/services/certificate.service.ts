@@ -101,6 +101,12 @@ export class CertificateService {
       const event = await eventRepository.findById(event_id);
       assertIssuableFormation(event);
 
+      const wantedIds = Array.isArray(ticket_ids)
+        ? ticket_ids
+            .map((id) => Number(id))
+            .filter((n) => Number.isFinite(n))
+        : [];
+
       const issuable = await ticketRepository.findIssuableByEventId(
         client,
         event_id
@@ -110,9 +116,9 @@ export class CertificateService {
       }
 
       let targets = issuable;
-      if (ticket_ids && ticket_ids.length > 0) {
-        const wanted = new Set(ticket_ids);
-        targets = issuable.filter((t) => wanted.has(t.id));
+      if (wantedIds.length > 0) {
+        const wanted = new Set(wantedIds);
+        targets = issuable.filter((t) => wanted.has(Number(t.id)));
         if (targets.length === 0) {
           throw new BadRequestError(
             "None of the provided ticket_ids are valid for this formation"

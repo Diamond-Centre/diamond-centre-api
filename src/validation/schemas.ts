@@ -9,7 +9,10 @@ export const registerSchema = z.object({
   sexe: z.enum(["homme", "femme"]),
   picture: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-    z.string().max(400_000).optional()
+    z
+      .string()
+      .max(500_000, { message: "Image capacity too large (max 280 KB)" })
+      .optional()
   ),
 });
 
