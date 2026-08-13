@@ -252,10 +252,14 @@ export class UserService {
       patch.picture = String(input.picture);
     }
     if (input.password !== undefined) {
-      if (String(input.password).length < 6) {
+      const password = String(input.password);
+      if (!password.trim()) {
         throw new BadRequestError("Password must be at least 6 characters");
       }
-      patch.passwordHash = await bcrypt.hash(String(input.password), 10);
+      if (password.length < 6) {
+        throw new BadRequestError("Password must be at least 6 characters");
+      }
+      patch.passwordHash = await bcrypt.hash(password, 10);
     }
 
     if (Object.keys(patch).length === 0) {
@@ -269,7 +273,14 @@ export class UserService {
       );
     }
     if (patch.passwordHash) {
-      await sessionRepository.revokeAll(id);
+      try {
+        await sessionRepository.revokeAll(id);
+      } catch (error) {
+        console.error(
+          "[users] Failed to revoke sessions after password update",
+          error
+        );
+      }
     }
     return toUserResponse(updated);
   }
