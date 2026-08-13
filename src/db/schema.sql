@@ -444,3 +444,9 @@ CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_ticket
 
 -- Webinaire is no longer a valid event category
 UPDATE events SET category = 'conference' WHERE category = 'webinaire';
+
+-- Events become completed only after their end date has passed
+UPDATE events
+   SET status = 'completed', updated_at = NOW()
+ WHERE status IN ('published', 'draft')
+   AND end_date < CURRENT_DATE;

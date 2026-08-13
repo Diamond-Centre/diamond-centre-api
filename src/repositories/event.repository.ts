@@ -191,6 +191,16 @@ export class EventRepository {
       [quantity, eventId]
     );
   }
+
+  /** Mark published/draft events as completed once their end date has passed. */
+  async completeExpired(): Promise<void> {
+    await pool.query(
+      `UPDATE events
+         SET status = 'completed', updated_at = NOW()
+       WHERE status IN ('published', 'draft')
+         AND end_date < CURRENT_DATE`
+    );
+  }
 }
 
 export const eventRepository = new EventRepository();

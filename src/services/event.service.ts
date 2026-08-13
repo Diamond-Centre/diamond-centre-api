@@ -13,6 +13,7 @@ import { BadRequestError, NotFoundError } from "../errors/AppError";
 import {
   CreateEventInput,
   CreatePromotionInput,
+  EventStatus,
   PromotionRecord,
   UpdateEventInput,
 } from "../types";
@@ -82,8 +83,24 @@ function normalizeCoord(value: number | string | null | undefined): number | nul
   return n;
 }
 
+function resolveEventStatus(
+  requested: string | undefined,
+  end_date: string,
+  fallback: string
+): EventStatus {
+  const candidate =
+    requested && isValidEventStatus(requested) ? requested : fallback;
+  const status = isValidEventStatus(candidate) ? candidate : "published";
+  if (status === "cancelled") return "cancelled";
+  // Terminé only after the end date has passed — not on start date, not on create.
+  if (isDateBeforeToday(end_date)) return "completed";
+  if (status === "completed") return "published";
+  return status;
+}
+
 export class EventService {
   async listPublished() {
+    await eventRepository.completeExpired();
     const events = await eventRepository.findPublished();
     const promotions = await promotionRepository.findByEventIds(
       events.map((event) => event.id)
@@ -97,6 +114,7 @@ export class EventService {
   }
 
   async listAll() {
+    await eventRepository.completeExpired();
     const events = await eventRepository.findAll();
     const promotions = await promotionRepository.findByEventIds(
       events.map((event) => event.id)
@@ -110,6 +128,7 @@ export class EventService {
   }
 
   async getById(id: number | string) {
+    await eventRepository.completeExpired();
     const event = await eventRepository.findById(id);
     if (!event) {
       throw new NotFoundError("Event not found");
@@ -174,7 +193,7 @@ export class EventService {
     }
 
     const { start_time, end_time } = normalizeTimes(input);
-    const status = isValidEventStatus(requestedStatus) ? requestedStatus : "draft";
+    const status = resolveEventStatus(requestedStatus, end_date, "draft");
 
     return withTransaction(async (client) => {
       const event = await eventRepository.create(client, {
@@ -286,7 +305,11 @@ export class EventService {
         available_tickets,
         image_url:
           input.image_url !== undefined ? input.image_url : existing.image_url,
-        status: input.status ?? existing.status,
+        status: resolveEventStatus(
+          input.status,
+          end_date,
+          existing.status
+        ),
       });
 
       const changeId = await eventChangeService.notifyScheduleChange(
