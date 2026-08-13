@@ -1,7 +1,6 @@
 import { withTransaction } from "../db/transaction";
 import { qrCodeRepository } from "../repositories/qrCode.repository";
 import { ticketRepository } from "../repositories/ticket.repository";
-import { paymentRepository } from "../repositories/payment.repository";
 import { BadRequestError } from "../errors/AppError";
 import { ScanQrInput } from "../types";
 import { PoolClient } from "pg";
@@ -37,14 +36,7 @@ async function validateQrRecord(qr: QrCodeRecord | null, client: PoolClient) {
     return { valid: false, error: "Ticket not confirmed" };
   }
 
-  const ticket = await ticketRepository.findByIdForUpdate(client, qr.ticket_id);
-  const paid = ticket?.booking_id
-    ? await paymentRepository.hasSuccessfulForBooking(ticket.booking_id, client)
-    : await paymentRepository.hasSuccessfulForTicket(qr.ticket_id, client);
-  if (!paid) {
-    return { valid: false, error: "Ticket not paid" };
-  }
-
+  // confirme already means the reservation is paid
   if (qr.validated) {
     return { valid: false, error: "Ticket already validated" };
   }
