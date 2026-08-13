@@ -74,7 +74,7 @@ export class TicketService {
       const unitPrice = promotion
         ? calculatePromoPrice(Number(event.price), Number(promotion.pourcentage))
         : Number(event.price);
-      const expiresAt = new Date(`${formatDate(event.start_date)}T23:59:59Z`);
+      const expiresAt = new Date(`${formatDate(event.end_date)}T23:59:59Z`);
       const bookingId = randomUUID();
 
       const createdTickets: TicketRecord[] = [];

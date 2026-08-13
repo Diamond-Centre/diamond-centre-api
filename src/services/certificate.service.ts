@@ -6,8 +6,23 @@ import { ticketRepository } from "../repositories/ticket.repository";
 import { userRepository } from "../repositories/user.repository";
 import { notificationRepository } from "../repositories/notification.repository";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/AppError";
-import { CertificateRecord, IssueCertificatesInput } from "../types";
+import { CertificateRecord, EventRecord, IssueCertificatesInput } from "../types";
 import { formatDate } from "../utils/date";
+
+/** Issued as long as the event is a non-cancelled formation — start/end dates do not block. */
+function assertIssuableFormation(event: EventRecord | null): asserts event is EventRecord {
+  if (!event) {
+    throw new NotFoundError("Event not found");
+  }
+  if (event.category !== "formation") {
+    throw new BadRequestError("Certificates can only be issued for formations");
+  }
+  if (event.status === "cancelled") {
+    throw new BadRequestError(
+      "Cannot issue certificates for a cancelled formation"
+    );
+  }
+}
 
 function generateCertificateCode(eventId: number, ticketId: number): string {
   const stamp = Date.now().toString(36).toUpperCase();
@@ -47,12 +62,7 @@ export function toCertificateResponse(cert: CertificateRecord) {
 export class CertificateService {
   async listEligible(eventId: number) {
     const event = await eventRepository.findById(eventId);
-    if (!event) {
-      throw new NotFoundError("Event not found");
-    }
-    if (event.category !== "formation") {
-      throw new BadRequestError("Certificates can only be issued for formations");
-    }
+    assertIssuableFormation(event);
 
     const tickets = await ticketRepository.findIssuableByEventIdPool(eventId);
     const existing = await certificateRepository.findByEventId(eventId);
@@ -64,6 +74,7 @@ export class CertificateService {
         title: event.title,
         category: event.category,
         status: event.status,
+        location: event.location,
         start_date: formatDate(event.start_date),
         end_date: formatDate(event.end_date),
       },
@@ -88,14 +99,7 @@ export class CertificateService {
 
     return withTransaction(async (client) => {
       const event = await eventRepository.findById(event_id);
-      if (!event) {
-        throw new NotFoundError("Event not found");
-      }
-      if (event.category !== "formation") {
-        throw new BadRequestError(
-          "Certificates can only be issued for formations"
-        );
-      }
+      assertIssuableFormation(event);
 
       const issuable = await ticketRepository.findIssuableByEventId(
         client,

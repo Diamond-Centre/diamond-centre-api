@@ -195,14 +195,19 @@ export class TicketRepository {
     return result.rows;
   }
 
-  /** Participants for whom an admin may issue a formation certificate */
+  /**
+   * Participants for whom an admin may issue a formation certificate.
+   * Includes expired tickets: a past start_date marks unused tickets `expire`,
+   * but those clients still registered and must remain eligible.
+   * Refunded tickets (`rembourse`) are excluded.
+   */
   async findIssuableByEventId(
     client: PoolClient,
     eventId: number
   ): Promise<TicketRecord[]> {
     const result = await client.query<TicketRecord>(
       `SELECT * FROM tickets
-       WHERE event_id = $1 AND status IN ('confirme', 'scanne')
+       WHERE event_id = $1 AND status IN ('confirme', 'scanne', 'expire')
        ORDER BY id ASC`,
       [eventId]
     );
@@ -212,7 +217,7 @@ export class TicketRepository {
   async findIssuableByEventIdPool(eventId: number): Promise<TicketRecord[]> {
     const result = await pool.query<TicketRecord>(
       `SELECT * FROM tickets
-       WHERE event_id = $1 AND status IN ('confirme', 'scanne')
+       WHERE event_id = $1 AND status IN ('confirme', 'scanne', 'expire')
        ORDER BY id ASC`,
       [eventId]
     );
