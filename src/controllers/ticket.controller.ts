@@ -23,6 +23,15 @@ export class TicketController {
     );
     res.json(ticket);
   };
+
+  remove = async (req: AuthRequest, res: Response): Promise<void> => {
+    if (!req.user) throw new UnauthorizedError("Unauthorized");
+    const result = await ticketService.remove(
+      parseIdParam(req.params.id),
+      req.user
+    );
+    res.json(result);
+  };
 }
 
 export const ticketController = new TicketController();

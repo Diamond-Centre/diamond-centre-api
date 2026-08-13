@@ -224,6 +224,11 @@ export class TicketRepository {
     return result.rows;
   }
 
+  async delete(client: PoolClient, id: number): Promise<boolean> {
+    const result = await client.query("DELETE FROM tickets WHERE id = $1", [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async listAll(): Promise<
     Array<
       TicketRecord & {

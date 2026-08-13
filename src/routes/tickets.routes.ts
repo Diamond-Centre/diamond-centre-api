@@ -28,4 +28,10 @@ router.get(
   asyncHandler(ticketController.getById)
 );
 
+router.delete(
+  "/:id",
+  authenticate,
+  asyncHandler(ticketController.remove)
+);
+
 export default router;

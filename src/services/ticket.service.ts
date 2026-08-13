@@ -4,6 +4,7 @@ import { eventRepository } from "../repositories/event.repository";
 import { promotionRepository } from "../repositories/promotion.repository";
 import { ticketRepository } from "../repositories/ticket.repository";
 import { qrCodeRepository } from "../repositories/qrCode.repository";
+import { certificateRepository } from "../repositories/certificate.repository";
 import {
   calculatePromoPrice,
   toTicketDetailResponse,
@@ -128,6 +129,53 @@ export class TicketService {
 
     const qrCodes = await qrCodeRepository.findByTicketId(ticket.id);
     return toTicketDetailResponse(ticket, qrCodes);
+  }
+
+  async remove(id: number | string, user: JwtPayload) {
+    return withTransaction(async (client) => {
+      const ticket = await ticketRepository.findByIdForUpdate(client, id);
+      if (!ticket) {
+        throw new NotFoundError("Ticket not found");
+      }
+
+      if (
+        !isAdminRole(user.role) &&
+        user.email?.toLowerCase() !== ticket.customer_email.toLowerCase()
+      ) {
+        throw new ForbiddenError("You do not have access to this ticket");
+      }
+
+      if (ticket.status === "scanne") {
+        throw new BadRequestError(
+          "Impossible de supprimer un ticket déjà scanné."
+        );
+      }
+
+      const certificate = await certificateRepository.findByTicketId(
+        ticket.id,
+        client
+      );
+      if (certificate) {
+        throw new BadRequestError(
+          "Impossible de supprimer un ticket associé à un certificat."
+        );
+      }
+
+      if (ticket.status === "confirme" || ticket.status === "expire") {
+        await eventRepository.incrementAvailableTickets(
+          client,
+          ticket.event_id,
+          ticket.quantity
+        );
+      }
+
+      const deleted = await ticketRepository.delete(client, ticket.id);
+      if (!deleted) {
+        throw new NotFoundError("Ticket not found");
+      }
+
+      return { message: "Ticket deleted", id: ticket.id };
+    });
   }
 }
 

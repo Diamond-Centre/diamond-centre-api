@@ -37,8 +37,11 @@ export class CertificateRepository {
     return result.rows[0];
   }
 
-  async findByTicketId(ticketId: number): Promise<CertificateRecord | null> {
-    const result = await pool.query<CertificateRecord>(
+  async findByTicketId(
+    ticketId: number,
+    client: PoolClient | typeof pool = pool
+  ): Promise<CertificateRecord | null> {
+    const result = await client.query<CertificateRecord>(
       "SELECT * FROM certificates WHERE ticket_id = $1",
       [ticketId]
     );

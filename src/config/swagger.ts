@@ -789,6 +789,23 @@ const swaggerDocument = {
           },
         },
       },
+      delete: {
+        tags: ["Tickets"],
+        summary: "Supprimer un ticket (proprietaire ou admin)",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Ticket supprime",
+          },
+        },
+      },
     },
     "/api/payments/initiate": {
       post: {
