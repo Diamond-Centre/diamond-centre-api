@@ -68,7 +68,8 @@ export class AuthService {
       picture,
       authProvider: "local",
     });
-    return toUserResponse(user);
+    // Same shape as login so the client can enter their space immediately
+    return authTokens(user);
   }
 
   async login(input: LoginInput) {
