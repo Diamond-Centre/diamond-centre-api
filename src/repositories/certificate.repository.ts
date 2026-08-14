@@ -114,6 +114,21 @@ export class CertificateRepository {
     return result.rows;
   }
 
+  async updateRecipientName(data: {
+    name: string;
+    email: string;
+    userId?: number | null;
+  }): Promise<number> {
+    const result = await pool.query(
+      `UPDATE certificates
+          SET recipient_name = $1
+        WHERE LOWER(recipient_email) = LOWER($2)
+           OR ($3::int IS NOT NULL AND user_id = $3)`,
+      [data.name, data.email, data.userId ?? null]
+    );
+    return result.rowCount ?? 0;
+  }
+
   async findExistingTicketIds(
     client: PoolClient,
     ticketIds: number[]

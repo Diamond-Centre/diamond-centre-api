@@ -1,5 +1,7 @@
 import { userRepository } from "../repositories/user.repository";
 import { sessionRepository } from "../repositories/session.repository";
+import { ticketRepository } from "../repositories/ticket.repository";
+import { certificateRepository } from "../repositories/certificate.repository";
 import { toUserResponse, isValidUserSexe } from "../models/mappers";
 import {
   BadRequestError,
@@ -8,7 +10,7 @@ import {
   UnauthorizedError,
 } from "../errors/AppError";
 import bcrypt from "bcryptjs";
-import { UpdateUserInput, UserRole } from "../types";
+import { UpdateUserInput, UserRecord, UserRole } from "../types";
 
 export class UserService {
   async list() {
@@ -82,6 +84,9 @@ export class UserService {
     const updated = await userRepository.update(userId, patch);
     if (!updated) {
       throw new NotFoundError("User not found");
+    }
+    if (patch.name) {
+      await this.propagateClientName(existing, updated);
     }
     return toUserResponse(updated);
   }
@@ -272,6 +277,9 @@ export class UserService {
         role === "admin" ? "Admin not found" : "Client not found"
       );
     }
+    if (patch.name) {
+      await this.propagateClientName(existing, updated);
+    }
     if (patch.passwordHash) {
       try {
         await sessionRepository.revokeAll(id);
@@ -283,6 +291,24 @@ export class UserService {
       }
     }
     return toUserResponse(updated);
+  }
+
+  /** Keep ticket holder names and certificate names in sync with the account. */
+  private async propagateClientName(existing: UserRecord, updated: UserRecord) {
+    if (updated.role !== "client") return;
+    const name = String(updated.name || "").trim();
+    if (!name) return;
+    const email = existing.email || updated.email;
+    try {
+      await ticketRepository.updateNamedHolderByEmail(email, name);
+      await certificateRepository.updateRecipientName({
+        name,
+        email,
+        userId: updated.id,
+      });
+    } catch (error) {
+      console.error("[users] Failed to propagate client name", error);
+    }
   }
 
   private async deleteByRole(id: number, role: UserRole) {

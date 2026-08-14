@@ -249,6 +249,18 @@ export class TicketRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
+  /** Rename named (non-shareable) tickets owned by this email. */
+  async updateNamedHolderByEmail(email: string, name: string): Promise<number> {
+    const result = await pool.query(
+      `UPDATE tickets
+          SET customer_name = $1
+        WHERE LOWER(customer_email) = LOWER($2)
+          AND BTRIM(COALESCE(customer_name, '')) <> ''`,
+      [name, email]
+    );
+    return result.rowCount ?? 0;
+  }
+
   async listAll(): Promise<
     Array<
       TicketRecord & {
