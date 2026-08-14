@@ -440,10 +440,6 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
   ON notifications(user_id, is_read);
 
--- Remove broadcast "new event" rows created by older syncForUser versions
-DELETE FROM notifications
- WHERE type = 'info'
-   AND dedupe_key LIKE 'info:event:%';
 CREATE INDEX IF NOT EXISTS idx_event_schedule_changes_event
   ON event_schedule_changes(event_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_change_responses_change

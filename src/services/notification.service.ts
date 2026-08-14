@@ -98,15 +98,6 @@ export class NotificationService {
    * Never copies platform-wide events into a new inbox.
    */
   async syncForUser(userId: number, email: string) {
-    // Remove leftover broadcast "new event" rows from older sync versions
-    await pool.query(
-      `DELETE FROM notifications
-        WHERE user_id = $1
-          AND type = 'info'
-          AND dedupe_key LIKE 'info:event:%'`,
-      [userId]
-    );
-
     // Reminders for upcoming confirmed tickets (within 7 days)
     const upcoming = await pool.query<{
       ticket_id: number;
@@ -206,6 +197,34 @@ export class NotificationService {
     }
 
     return this.list(userId);
+  }
+
+  /**
+   * Tell every client a new event was just published.
+   * Called at publish time only — never backfilled on sync.
+   */
+  async notifyNewPublishedEvent(event: { id: number; title: string }): Promise<void> {
+    const title = String(event.title || "").trim() || "un événement";
+    const eventId = Number(event.id);
+    if (!Number.isFinite(eventId)) return;
+
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, message, event_id, dedupe_key)
+       SELECT u.id,
+              'info',
+              'Nouvel événement',
+              $1,
+              $2,
+              $3
+         FROM users u
+        WHERE u.role = 'client'
+       ON CONFLICT DO NOTHING`,
+      [
+        `« ${title} » vient d’être publié. Découvrez-le et réservez votre place.`,
+        eventId,
+        `info:published:${eventId}`,
+      ]
+    );
   }
 }
 

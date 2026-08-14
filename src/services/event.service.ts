@@ -19,6 +19,7 @@ import {
 } from "../types";
 import { formatDate, formatTime, isDateBeforeToday, isValidTime } from "../utils/date";
 import { eventChangeService } from "./event_change.service";
+import { notificationService } from "./notification.service";
 
 function normalizePromotion(promotion: CreatePromotionInput): {
   nombre: number;
@@ -195,7 +196,7 @@ export class EventService {
     const { start_time, end_time } = normalizeTimes(input);
     const status = resolveEventStatus(requestedStatus, end_date, "draft");
 
-    return withTransaction(async (client) => {
+    const created = await withTransaction(async (client) => {
       const event = await eventRepository.create(client, {
         title,
         description,
@@ -229,6 +230,16 @@ export class EventService {
           : null,
       };
     });
+
+    if (created.status === "published") {
+      notificationService
+        .notifyNewPublishedEvent({ id: created.id, title: created.title })
+        .catch((err) => {
+          console.error("[notifications] Failed to announce new event:", err);
+        });
+    }
+
+    return created;
   }
 
   async update(
@@ -236,7 +247,9 @@ export class EventService {
     input: UpdateEventInput,
     adminUserId?: number | null
   ) {
-    return withTransaction(async (client) => {
+    let justPublished: { id: number; title: string } | null = null;
+
+    const result = await withTransaction(async (client) => {
       const existing = await eventRepository.findByIdForUpdate(client, id);
       if (!existing) {
         throw new NotFoundError("Event not found");
@@ -319,6 +332,10 @@ export class EventService {
         adminUserId ?? null
       );
 
+      if (existing.status !== "published" && updated.status === "published") {
+        justPublished = { id: updated.id, title: updated.title };
+      }
+
       let promotion: PromotionRecord | null = null;
       if (input.promotion === null) {
         await promotionRepository.deleteByEventId(client, existing.id);
@@ -340,6 +357,14 @@ export class EventService {
         clients_notified_count: notified?.notifiedCount ?? 0,
       };
     });
+
+    if (justPublished) {
+      notificationService.notifyNewPublishedEvent(justPublished).catch((err) => {
+        console.error("[notifications] Failed to announce new event:", err);
+      });
+    }
+
+    return result;
   }
 
   async remove(id: number | string) {
