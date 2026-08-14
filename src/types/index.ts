@@ -76,6 +76,7 @@ export interface TicketRecord {
   customer_email: string;
   customer_phone: string;
   expires_at: Date | null;
+  hidden_from_admin?: boolean;
   created_at: Date;
   event_title?: string;
 }

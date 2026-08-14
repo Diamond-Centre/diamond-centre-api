@@ -170,6 +170,19 @@ export class TicketService {
         );
       }
 
+      if (isAdminRole(user.role)) {
+        if (ticket.status !== "expire") {
+          throw new BadRequestError(
+            "Les administrateurs ne peuvent retirer que les tickets expirés."
+          );
+        }
+        const hidden = await ticketRepository.hideFromAdmin(client, ticket.id);
+        if (!hidden) {
+          throw new NotFoundError("Ticket not found");
+        }
+        return { message: "Ticket removed from admin view", id: ticket.id };
+      }
+
       if (!isAdminRole(user.role)) {
         const event = await eventRepository.findById(ticket.event_id);
         if (!event) {

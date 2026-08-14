@@ -261,6 +261,16 @@ export class TicketRepository {
     return result.rowCount ?? 0;
   }
 
+  async hideFromAdmin(client: PoolClient, id: number): Promise<boolean> {
+    const result = await client.query(
+      `UPDATE tickets
+          SET hidden_from_admin = TRUE
+        WHERE id = $1 AND status = 'expire'`,
+      [id]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async listAll(): Promise<
     Array<
       TicketRecord & {
@@ -291,6 +301,7 @@ export class TicketRepository {
               e.location AS event_location
        FROM tickets t
        JOIN events e ON e.id = t.event_id
+       WHERE COALESCE(t.hidden_from_admin, FALSE) = FALSE
        ORDER BY t.created_at DESC, t.id DESC`
     );
     return result.rows;
