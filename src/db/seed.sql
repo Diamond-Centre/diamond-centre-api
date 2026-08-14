@@ -2,7 +2,7 @@
 
 BEGIN;
 
-TRUNCATE TABLE payments, qr_codes, tickets, promotions, events RESTART IDENTITY CASCADE;
+TRUNCATE TABLE notifications, payments, qr_codes, tickets, promotions, events RESTART IDENTITY CASCADE;
 
 INSERT INTO events (
   title, description, price, currency, start_date, end_date,

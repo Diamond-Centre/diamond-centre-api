@@ -94,10 +94,19 @@ export class NotificationService {
   }
 
   /**
-   * Ensure reminder + offer notifications exist for the current user
-   * based on confirmed tickets and published events.
+   * Backfill reminders / reservation / cancellation for THIS user's tickets only.
+   * Never copies platform-wide events into a new inbox.
    */
   async syncForUser(userId: number, email: string) {
+    // Remove leftover broadcast "new event" rows from older sync versions
+    await pool.query(
+      `DELETE FROM notifications
+        WHERE user_id = $1
+          AND type = 'info'
+          AND dedupe_key LIKE 'info:event:%'`,
+      [userId]
+    );
+
     // Reminders for upcoming confirmed tickets (within 7 days)
     const upcoming = await pool.query<{
       ticket_id: number;
@@ -167,32 +176,6 @@ export class NotificationService {
         ticket_id: row.ticket_id,
         event_id: row.event_id,
         dedupe_key: `reservation:${row.ticket_id}`,
-      });
-    }
-
-    // New published events (info / offers) — last 14 days
-    const freshEvents = await pool.query<{
-      id: number;
-      title: string;
-      location: string;
-      start_date: Date;
-    }>(
-      `SELECT id, title, location, start_date
-       FROM events
-       WHERE status = 'published'
-         AND created_at >= NOW() - INTERVAL '14 days'
-       ORDER BY created_at DESC
-       LIMIT 10`
-    );
-
-    for (const row of freshEvents.rows) {
-      await notificationRepository.create({
-        user_id: userId,
-        type: "info",
-        title: "Nouvel événement",
-        message: `« ${row.title} » est disponible à ${row.location}.`,
-        event_id: row.id,
-        dedupe_key: `info:event:${row.id}`,
       });
     }
 
