@@ -10,7 +10,7 @@ import {
   toTicketDetailResponse,
   toTicketReserveResponse,
 } from "../models/mappers";
-import { formatDate } from "../utils/date";
+import { formatDate, isDateBeforeToday } from "../utils/date";
 import { generateEntryCode, generateQrCode } from "../utils/qr";
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { ReserveTicketInput, TicketRecord } from "../types";
@@ -168,6 +168,19 @@ export class TicketService {
         throw new BadRequestError(
           "Impossible de supprimer un ticket déjà scanné."
         );
+      }
+
+      if (!isAdminRole(user.role)) {
+        const event = await eventRepository.findById(ticket.event_id);
+        if (!event) {
+          throw new NotFoundError("Event not found");
+        }
+        const endDate = event.end_date || event.start_date;
+        if (!isDateBeforeToday(endDate)) {
+          throw new BadRequestError(
+            "Vous ne pouvez supprimer qu’un ticket dont l’événement est déjà passé."
+          );
+        }
       }
 
       const certificate = await certificateRepository.findByTicketId(
