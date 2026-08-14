@@ -216,6 +216,11 @@ const swaggerDocument = {
           customer_name: { type: "string", example: "Jean Dupont" },
           customer_email: { type: "string", format: "email" },
           customer_phone: { type: "string", example: "+237670000000" },
+          confirm_duplicate: {
+            type: "boolean",
+            description:
+              "Required true when the buyer already has tickets for this event. Extra tickets are shareable (QR + entry code only).",
+          },
         },
       },
       Ticket: {
@@ -233,6 +238,11 @@ const swaggerDocument = {
           },
           customer_name: { type: "string" },
           customer_email: { type: "string", format: "email" },
+          shareable: {
+            type: "boolean",
+            description:
+              "True when the seat has no holder (QR + 8-digit entry code only) and can be shared with a friend.",
+          },
           qr_codes: {
             type: "array",
             items: {
@@ -762,6 +772,10 @@ const swaggerDocument = {
                 schema: { $ref: "#/components/schemas/Ticket" },
               },
             },
+          },
+          "409": {
+            description:
+              "L'acheteur a deja des billets pour cet evenement. Renvoyer avec confirm_duplicate=true.",
           },
         },
       },

@@ -50,4 +50,5 @@ export const reserveTicketSchema = z.object({
   customer_name: z.string().min(1).max(255),
   customer_email: z.string().email().max(255),
   customer_phone: z.string().min(6).max(50),
+  confirm_duplicate: z.boolean().optional(),
 });

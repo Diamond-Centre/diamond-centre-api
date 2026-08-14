@@ -91,6 +91,22 @@ export class TicketRepository {
     return result.rows[0];
   }
 
+  async countActiveByEventAndEmail(
+    client: PoolClient,
+    eventId: number,
+    email: string
+  ): Promise<number> {
+    const result = await client.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n
+         FROM tickets
+        WHERE event_id = $1
+          AND LOWER(customer_email) = LOWER($2)
+          AND status IN ('confirme', 'scanne', 'expire')`,
+      [eventId, email]
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
   async findByBookingId(
     client: PoolClient | typeof pool,
     bookingId: string
@@ -207,7 +223,9 @@ export class TicketRepository {
   ): Promise<TicketRecord[]> {
     const result = await client.query<TicketRecord>(
       `SELECT * FROM tickets
-       WHERE event_id = $1 AND status IN ('confirme', 'scanne', 'expire')
+       WHERE event_id = $1
+         AND status IN ('confirme', 'scanne', 'expire')
+         AND BTRIM(COALESCE(customer_name, '')) <> ''
        ORDER BY id ASC`,
       [eventId]
     );
@@ -217,7 +235,9 @@ export class TicketRepository {
   async findIssuableByEventIdPool(eventId: number): Promise<TicketRecord[]> {
     const result = await pool.query<TicketRecord>(
       `SELECT * FROM tickets
-       WHERE event_id = $1 AND status IN ('confirme', 'scanne', 'expire')
+       WHERE event_id = $1
+         AND status IN ('confirme', 'scanne', 'expire')
+         AND BTRIM(COALESCE(customer_name, '')) <> ''
        ORDER BY id ASC`,
       [eventId]
     );

@@ -103,6 +103,10 @@ export function toCreatedEventResponse(event: EventRecord) {
   };
 }
 
+export function isShareableHolder(name: string | null | undefined): boolean {
+  return !String(name ?? "").trim();
+}
+
 export function toTicketReserveResponse(
   tickets: TicketRecord[],
   eventTitle: string,
@@ -129,6 +133,8 @@ export function toTicketReserveResponse(
       total_price: Number(t.total_price),
       currency: t.currency,
       status: t.status,
+      customer_name: t.customer_name,
+      shareable: isShareableHolder(t.customer_name),
       qr_codes: qrByTicketId.get(t.id) ?? [],
     })),
     qr_codes: allQrCodes,
@@ -158,6 +164,7 @@ export function toTicketDetailResponse(
     customer_name: ticket.customer_name,
     customer_email: ticket.customer_email,
     customer_phone: ticket.customer_phone,
+    shareable: isShareableHolder(ticket.customer_name),
     qr_codes: qrCodes,
     entry_code: qrCodes[0]?.entry_code ?? null,
     created_at: ticket.created_at.toISOString(),

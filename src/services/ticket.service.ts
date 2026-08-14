@@ -12,7 +12,7 @@ import {
 } from "../models/mappers";
 import { formatDate } from "../utils/date";
 import { generateEntryCode, generateQrCode } from "../utils/qr";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../errors/AppError";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../errors/AppError";
 import { ReserveTicketInput, TicketRecord } from "../types";
 import { JwtPayload } from "../utils/jwt";
 import { isAdminRole } from "../models/mappers";
@@ -43,7 +43,14 @@ export class TicketService {
   }
 
   async reserve(input: ReserveTicketInput) {
-    const { event_id, quantity, customer_name, customer_email, customer_phone } = input;
+    const {
+      event_id,
+      quantity,
+      customer_name,
+      customer_email,
+      customer_phone,
+      confirm_duplicate,
+    } = input;
 
     if (!event_id || !quantity || !customer_name || !customer_email || !customer_phone) {
       const missing = [
@@ -71,6 +78,16 @@ export class TicketService {
         throw new BadRequestError("Not enough tickets available");
       }
 
+      const existingCount = await ticketRepository.countActiveByEventAndEmail(
+        client,
+        event_id,
+        customer_email
+      );
+      if (existingCount > 0 && !confirm_duplicate) {
+        throw new ConflictError("ALREADY_HAS_TICKETS");
+      }
+
+      const allShareable = existingCount > 0;
       const promotion = await promotionRepository.findByEventId(event.id);
       const unitPrice = promotion
         ? calculatePromoPrice(Number(event.price), Number(promotion.pourcentage))
@@ -84,17 +101,19 @@ export class TicketService {
         Array<{ code: string; entry_code: string }>
       >();
 
-      // One ticket per place, each with its own QR + 8-digit entry code
+      // First booking: seat 0 keeps the buyer; extra seats are empty (shareable).
+      // Re-reserve after confirm: every new seat is shareable (QR + entry code only).
       for (let i = 0; i < quantity; i++) {
+        const shareable = allShareable || i > 0;
         const ticket = await ticketRepository.create(client, {
           event_id,
           booking_id: bookingId,
           quantity: 1,
           total_price: unitPrice,
           currency: event.currency,
-          customer_name,
+          customer_name: shareable ? "" : customer_name,
           customer_email,
-          customer_phone,
+          customer_phone: shareable ? "" : customer_phone,
           expires_at: expiresAt,
         });
 

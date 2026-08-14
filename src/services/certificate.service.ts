@@ -140,6 +140,11 @@ export class CertificateService {
           continue;
         }
 
+        if (!String(ticket.customer_name || "").trim()) {
+          skipped.push({ ticket_id: ticket.id, reason: "shareable_seat" });
+          continue;
+        }
+
         const owner = await userRepository.findByEmail(
           ticket.customer_email.trim().toLowerCase()
         );

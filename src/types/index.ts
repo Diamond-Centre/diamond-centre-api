@@ -198,6 +198,8 @@ export interface ReserveTicketInput {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  /** Set true after the client confirms they already have tickets for this event. */
+  confirm_duplicate?: boolean;
 }
 
 export interface InitiatePaymentInput {

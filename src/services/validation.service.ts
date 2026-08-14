@@ -49,7 +49,7 @@ async function validateQrRecord(qr: QrCodeRecord | null, client: PoolClient) {
     valid: true,
     ticket_id: qr.ticket_id,
     event_title: qr.event_title,
-    customer_name: qr.customer_name,
+    customer_name: String(qr.customer_name || "").trim() || "Invité",
     entry_code: qr.entry_code,
     qr_code: qr.code,
     status: "scanne" as const,
