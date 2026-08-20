@@ -12,6 +12,7 @@ router.get(
   requireAdmin,
   asyncHandler(eventController.listAll)
 );
+router.get("/:id/cover", asyncHandler(eventController.cover));
 router.get("/:id", asyncHandler(eventController.getById));
 router.post("/", authenticate, requireAdmin, asyncHandler(eventController.create));
 router.put("/:id", authenticate, requireAdmin, asyncHandler(eventController.update));

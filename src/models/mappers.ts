@@ -1,5 +1,8 @@
 import { formatDate, formatTime } from "../utils/date";
 import {
+  resolvePublicEventImageUrl,
+} from "../utils/eventImage";
+import {
   EventCategory,
   EventRecord,
   EventStatus,
@@ -81,7 +84,8 @@ export function toEventResponse(
     category: event.category,
     capacity: event.capacity,
     available_tickets: event.available_tickets,
-    image_url: event.image_url,
+    image_url: resolvePublicEventImageUrl(event.id, event.image_url),
+    has_image: Boolean(event.image_url?.trim()),
     status: event.status,
     promotion: promotion ? toPromotionResponse(promotion, price) : null,
     created_at: event.created_at.toISOString(),

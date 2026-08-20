@@ -19,6 +19,17 @@ export class EventController {
     res.json(event);
   };
 
+  cover = async (req: AuthRequest, res: Response): Promise<void> => {
+    const cover = await eventService.getCover(parseIdParam(req.params.id));
+    if ("redirect" in cover) {
+      res.redirect(302, cover.redirect);
+      return;
+    }
+    res.setHeader("Content-Type", cover.mime);
+    res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+    res.send(cover.buffer);
+  };
+
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     const event = await eventService.create(req.body);
     res.status(201).json(event);

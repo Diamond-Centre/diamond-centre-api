@@ -18,6 +18,10 @@ import {
   UpdateEventInput,
 } from "../types";
 import { formatDate, formatTime, isDateBeforeToday, isValidTime } from "../utils/date";
+import {
+  isInlineDataImageUrl,
+  parseInlineDataImage,
+} from "../utils/eventImage";
 import { eventChangeService } from "./event_change.service";
 import { notificationService } from "./notification.service";
 
@@ -137,6 +141,31 @@ export class EventService {
 
     const promotion = await promotionRepository.findByEventId(event.id);
     return toEventResponse(event, promotion);
+  }
+
+  async getCover(id: number | string): Promise<
+    | { mime: string; buffer: Buffer }
+    | { redirect: string }
+  > {
+    const event = await eventRepository.findById(id);
+    if (!event?.image_url?.trim()) {
+      throw new NotFoundError("Event cover not found");
+    }
+
+    const raw = event.image_url.trim();
+    if (isInlineDataImageUrl(raw)) {
+      const parsed = parseInlineDataImage(raw);
+      if (!parsed) {
+        throw new BadRequestError("Invalid inline event cover");
+      }
+      return parsed;
+    }
+
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      return { redirect: raw };
+    }
+
+    return { redirect: raw.startsWith("/") ? raw : `/${raw}` };
   }
 
   async create(input: CreateEventInput) {
